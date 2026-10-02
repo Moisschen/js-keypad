@@ -219,6 +219,10 @@
         <input type="checkbox" id="stickOn" checked disabled> <span data-i18n="stickOn"></span>
       </label>
       <p class="hint" style="margin-top:4px" data-i18n="stickOnHint"></p>
+      <div class="row" style="margin-top:8px; gap:16px">
+        <label class="row" style="gap:6px; cursor:pointer"><input type="checkbox" id="invY" disabled> <span data-i18n="invY"></span></label>
+        <label class="row" style="gap:6px; cursor:pointer"><input type="checkbox" id="invX" disabled> <span data-i18n="invX"></span></label>
+      </div>
       <div style="margin-top:12px">
         <label for="rot" id="rotLabel"></label>
         <div class="row">
@@ -362,6 +366,7 @@ const STR = {
     learnHint: 'Nicht angeschlossene Tasten (z. B. die Daumentaste) mit „Überspringen“ auslassen. Ein Klick auf eine Taste im Bild springt zu ihr.',
     learnDone: 'Verdrahtung gespeichert – jede Taste ist jetzt ihrem Pin zugeordnet.', learnFailed: 'Speichern der Verdrahtung fehlgeschlagen',
     learnOld: 'Braucht Firmware 1.2 oder neuer – unten „Firmware aktualisieren“.',
+    invY: 'Hoch/runter umkehren', invX: 'Links/rechts umkehren',
     stickOn: 'Stick angeschlossen', stickOnHint: 'Ohne Stick den Haken entfernen – sonst lösen die offenen Eingänge zufällig Richtungstasten aus.',
     testLeft: (n, list) => `Noch ${n} offen: ${list}`, testDone: 'Alle 13 Tasten kommen an ✓',
     keyNames: {
@@ -488,6 +493,7 @@ const STR = {
     learnHint: 'Skip keys that are not wired (e.g. the thumb key). Clicking a key in the picture jumps to it.',
     learnDone: 'Wiring saved – every key is now assigned to its pin.', learnFailed: 'Saving the wiring failed',
     learnOld: 'Needs firmware 1.2 or newer – click “Update firmware” below.',
+    invY: 'Flip up/down', invX: 'Flip left/right',
     stickOn: 'Stick connected', stickOnHint: 'Untick without a stick – otherwise the open inputs randomly trigger direction keys.',
     testLeft: (n, list) => `${n} left: ${list}`, testDone: 'All 13 keys arrive ✓',
     keyNames: {
@@ -971,6 +977,11 @@ async function loadConfig() {
   const pm = await command('PINS');
   hasPinMap = !!pm && pm.startsWith('PINS ');
   if (hasPinMap) pinMap = pm.slice(5).trim().split(' ').map(Number);
+  const inv = await command('INV');
+  const hasInv = !!inv && inv.startsWith('INV ');
+  const invBits = hasInv ? Number(inv.slice(4)) : 0;
+  $('invX').disabled = $('invY').disabled = !hasInv;
+  $('invX').checked = !!(invBits & 1); $('invY').checked = !!(invBits & 2);
   const st = await command('STICK');
   $('stickOn').disabled = !(st && st.startsWith('STICK '));
   $('stickOn').checked = st !== 'STICK 0';
@@ -1137,6 +1148,7 @@ $('learnBtn').onclick = startLearn;
 $('learnSkip').onclick = () => { if (learn) { learn.note = ''; learn.waitRelease = false; nextLearn(); } };
 $('learnCancel').onclick = cancelLearn;
 $('stickOn').onchange = () => command('STICK ' + ($('stickOn').checked ? 1 : 0));
+$('invX').onchange = $('invY').onchange = () => command('INV ' + (($('invX').checked ? 1 : 0) | ($('invY').checked ? 2 : 0)));
 
 // ---- Backup / restore ----
 $('backup').onclick = async () => {
@@ -1145,6 +1157,7 @@ $('backup').onclick = async () => {
   const data = {
     jsKeypad: 1, version: deviceVersion, keys, threshold, pins: hasPinMap ? pinMap : undefined,
     stick: $('stickOn').disabled ? undefined : ($('stickOn').checked ? 1 : 0),
+    invert: $('invX').disabled ? undefined : (($('invX').checked ? 1 : 0) | ($('invY').checked ? 2 : 0)),
     rotation: rot && rot.startsWith('ROT ') ? Number(rot.slice(4)) : 0,
     mouseSpeed: spd && spd.startsWith('SPD ') ? Number(spd.slice(4)) : 8, mode,
   };
@@ -1170,6 +1183,7 @@ $('restoreFile').onchange = async (e) => {
   if (Number.isFinite(data.mouseSpeed)) await command('SPD ' + data.mouseSpeed);
   if (hasPinMap && Array.isArray(data.pins) && data.pins.length === NUM_KEYS) await command('PINS ' + data.pins.join(' '));
   if (data.stick === 0 || data.stick === 1) await command('STICK ' + data.stick);
+  if ([0, 1, 2, 3].includes(data.invert)) await command('INV ' + data.invert);
   await loadConfig();
   setSaveState('restoreDone', 'ok');
 };

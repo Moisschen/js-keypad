@@ -22,6 +22,7 @@ const int RotationMagicEepromAddress = 99;
 const uint8_t RotationMagic = 0xA5;
 const int MouseSpeedEepromAddress = 100;  // uint8 1..20, 0xFF from a fresh EEPROM falls back to the default
 const int StickEnabledEepromAddress = 101;  // 0 = no stick connected (A0/A1 floating, ignored), anything else = on
+const int AxisInvertEepromAddress = 102;    // bit 0 = flip left/right, bit 1 = flip up/down (0xFF fresh = none)
 const int PinMapMagicEepromAddress = 103;   // PinMapMagic when a learned pin map follows
 const int PinMapEepromAddress = 104;        // NumKeys bytes: Arduino pin of each key slot
 const uint8_t PinMapMagic = 0x5A;
@@ -31,7 +32,7 @@ const uint8_t ModeMouse = 2;
 const uint8_t GamepadReportId = 3;  // 1 and 2 are taken by Mouse/Keyboard
 const uint8_t MouseReportId = 4;
 const uint8_t DefaultMouseSpeed = 8;
-const char FirmwareVersion[] = "1.2";  // bump on every release; the web mapper compares it with docs/firmware-version.txt
+const char FirmwareVersion[] = "1.3";  // bump on every release; the web mapper compares it with docs/firmware-version.txt
 uint8_t mouseSpeed = DefaultMouseSpeed;  // pixels per 8 ms at full deflection
 
 static const uint8_t GamepadDescriptor[] PROGMEM = {
@@ -151,6 +152,7 @@ uint8_t keyPins[NumKeys];
 // click pins - allowed, but then that pin is both.
 const uint8_t KeyPinChoices[] = { 0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 14, 15, 16, A2, A3 };
 boolean stickEnabled = true;
+uint8_t axisInvert = 0;  // stick wired the other way round: bit 0 = X, bit 1 = Y
 const unsigned long KeyLockoutMillis = 8;  // ignore contact bounce right after a change
 
 struct KeyMap {
@@ -288,6 +290,8 @@ static void applyPlugInModeChoice() {
 
   long dx = x - calibration.x.center;
   long dy = calibration.y.center - y;  // raw high = down, so flip it: positive = up
+  if (axisInvert & 1) dx = -dx;        // stick wired the other way round (set in the mapper)
+  if (axisInvert & 2) dy = -dy;
 
   // Half of the calibrated travel, so it works on sticks with a small raw swing too.
   long travelX = max(calibration.x.maxValue - calibration.x.center, calibration.x.center - calibration.x.minValue);
@@ -319,6 +323,8 @@ void setup() {
     pinMode(keyPins[key], INPUT_PULLUP);
   }
   stickEnabled = EEPROM.read(StickEnabledEepromAddress) != 0;
+  uint8_t storedInvert = EEPROM.read(AxisInvertEepromAddress);
+  axisInvert = storedInvert <= 3 ? storedInvert : 0;
   pinMode(Pin_CalibrationLed, OUTPUT);
   digitalWrite(Pin_CalibrationLed, LOW);
 
@@ -554,6 +560,8 @@ static int clampAxis(float value) {
 static void applyOutputs(const Outputs& outputs, const State& state, const Inputs& inputs) {
   int rawX = InvertLeftXAxis ? -outputs.joystickX : outputs.joystickX;
   int rawY = InvertLeftYAxis ? -outputs.joystickY : outputs.joystickY;  // positive = up
+  if (axisInvert & 1) rawX = -rawX;
+  if (axisInvert & 2) rawY = -rawY;
   if (!stickEnabled) rawX = rawY = 0;  // nothing connected: floating A0/A1 would type random directions
   int x = clampAxis(rawX * rotationCos + rawY * rotationSin);
   int y = clampAxis(rawY * rotationCos - rawX * rotationSin);
@@ -598,6 +606,8 @@ static void applyOutputs(const Outputs& outputs, const State& state, const Input
 //   RESETPINS                    -> PINS ...      (default wiring, saved)
 //   STICK                        -> STICK <0|1>
 //   STICK <0|1>                  -> OK            (0 = no stick connected, its inputs are ignored; saved)
+//   INV                          -> INV <0..3>
+//   INV <0..3>                   -> OK | ERR      (bit 0 = flip left/right, bit 1 = flip up/down; saved)
 //   VER                          -> VER <firmware version>
 //   DEV                          -> DEV JS-KEYPAD
 //   SPD                          -> SPD <1..20>
@@ -737,6 +747,18 @@ static void handleCommand(char* line) {
     applyPins(DefaultKeyPins, true);
     EEPROM.update(PinMapMagicEepromAddress, 0);
     printPins();
+  } else if (strcmp(line, "INV") == 0) {
+    Serial.print(F("INV "));
+    Serial.println(axisInvert);
+  } else if (strncmp(line, "INV ", 4) == 0) {
+    int value = atoi(line + 4);
+    if (value < 0 || value > 3) {
+      Serial.println(F("ERR"));
+    } else {
+      axisInvert = (uint8_t)value;
+      EEPROM.update(AxisInvertEepromAddress, axisInvert);
+      Serial.println(F("OK"));
+    }
   } else if (strcmp(line, "STICK") == 0) {
     Serial.print(F("STICK "));
     Serial.println(stickEnabled ? 1 : 0);
