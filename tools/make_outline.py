@@ -31,11 +31,9 @@ def mat(name):
     return np.array(eval(re.search(rf"^{name}\s*=\s*(.*?);", placement, re.M).group(1)))
 
 
-def outline(mesh, tol=0.12, glatt=0.0):
+def outline(mesh, tol=0.12):
     poly = trimesh.path.polygons.projected(mesh, normal=[0, 0, 1], ignore_sign=True)
     poly = unary_union(poly).buffer(0.05).buffer(-0.05)
-    if glatt:   # Zacken abschneiden (oeffnen), Kerben fuellen (schliessen) - nur fuers Bild
-        poly = poly.buffer(-glatt).buffer(glatt).buffer(glatt).buffer(-glatt)
     poly = poly.simplify(tol)
     polys = list(poly.geoms) if isinstance(poly, MultiPolygon) else [poly]
     d = []
@@ -63,7 +61,13 @@ parts = {
     "housing": load(OUT / "_daumentaste_aufnahme.stl"),
     "shell": load(OUT / "oberschale-integrated.stl"),
 }
-shapes = {k: outline(v, glatt=3.0 if k == "shell" else 0.0) for k, v in parts.items()}
+shapes = {k: outline(v) for k, v in parts.items()}
+# Oberschale: vom User nachgezeichnete Kontur (tools/shell_outline.json) - die Projektion hat an der Hinterkante
+# zwischen kleinem Finger und Ring eine Zacke. Bei groesseren Modellaenderungen die Datei loeschen oder neu zeichnen
+kontur = Path(__file__).with_name("shell_outline.json")
+if kontur.exists():
+    pts = json.loads(kontur.read_text(encoding="utf-8"))["shell"]
+    shapes["shell"] = "M" + " L".join(f"{x:.1f} {y:.1f}" for x, y in pts) + " Z"
 allb = np.vstack([m.bounds for m in parts.values()])
 
 # --- Tastenkappen (wie key_mat in main.scad) ---
