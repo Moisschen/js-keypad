@@ -340,7 +340,7 @@ const STR = {
     palm: 'Handballen', thumb: 'Daumen', stickCtl: 'Stick',
     pickKey: 'Auf eine Taste im Bild klicken – oder eine Taste am Keypad drücken –, um sie zu belegen.',
     capturing: 'Jetzt die gewünschte Taste auf deiner PC-Tastatur drücken … oder unten auswählen.',
-    captureIdle: 'Hier klicken, um wieder per Tastendruck zu belegen.',
+    captureIdle: 'Zum Belegen hier klicken (oder die Taste im Bild), dann die gewünschte Taste auf der PC-Tastatur drücken.',
     needConnect: 'Erst oben verbinden – dann wird jede Änderung sofort auf dem Keypad gespeichert.',
     lockedGamepad: 'Im Controller-Modus ist der Stick ein Analog-Stick, der Klick ist Knopf 1. Belegbar nur im Tastatur-Modus.',
     lockedMouse: 'Im Maus-Modus bewegt der Stick den Mauszeiger, Klick = links, halten = rechts. Belegbar nur im Tastatur-Modus.',
@@ -466,7 +466,7 @@ const STR = {
     palm: 'Palm', thumb: 'Thumb', stickCtl: 'Stick',
     pickKey: 'Click a key in the picture – or press a key on the keypad – to map it.',
     capturing: 'Now press the key you want on your PC keyboard … or pick it below.',
-    captureIdle: 'Click here to map by key press again.',
+    captureIdle: 'To map it, click here (or the key in the picture), then press the key you want on your PC keyboard.',
     needConnect: 'Connect first – then every change is saved on the keypad right away.',
     lockedGamepad: 'In controller mode the stick is an analog stick and the click is button 1. Mappable in keyboard mode only.',
     lockedMouse: 'In mouse mode the stick moves the pointer, click = left, hold = right. Mappable in keyboard mode only.',
@@ -811,7 +811,9 @@ function renderTest() {
   info.className = missing.length ? '' : 'ok';
 }
 
-function select(slot) {
+// arm = start waiting for a PC key. A press on the keypad itself only selects (arm = false): the keypad also
+// types, and its next keystroke would otherwise end up as the new binding.
+function select(slot, arm = true) {
   if (learn) {   // during learning a click jumps to that key
     if (slot < NUM_KEYS) {
       learn.step = LEARN_ORDER.indexOf(slot); learn.slot = slot;
@@ -820,7 +822,7 @@ function select(slot) {
     return;
   }
   selected = slot;
-  capturing = port !== null && isKeypad && !stickLocked(slot);
+  capturing = arm && port !== null && isKeypad && !stickLocked(slot);
   const k = byUsage.get(keys[slot]);
   if (k) category = k.cat;
   render();
@@ -833,7 +835,7 @@ $('capture').onclick = () => {
 // Capturing a key press from the PC keyboard. Committed after a short delay, so a press on the
 // keypad itself (which also types) is recognised from the live state and not taken as the choice,
 // and AltGr (sent by Windows as Ctrl + AltRight) ends up as AltRight.
-let pendingCapture = null;
+let pendingCapture = null, lastKeypadPress = 0;
 window.addEventListener('keydown', (e) => {
   if (!capturing || e.repeat) return;
   const k = byCode.get(e.code);
@@ -841,11 +843,15 @@ window.addEventListener('keydown', (e) => {
   e.preventDefault();
   if (pendingCapture && pendingCapture.code === 'ControlLeft' && e.code === 'AltRight') pendingCapture.usage = k.usage;
   if (pendingCapture) return;
-  pendingCapture = { usage: k.usage, code: e.code, slot: selected };
+  pendingCapture = { usage: k.usage, code: e.code, slot: selected, at: Date.now() };
+  // Committed only if the keypad reported no press around that time: the live state arrives with up to
+  // ~0.25 s delay, so a keystroke typed by the keypad itself is recognised and dropped.
   setTimeout(() => {
     const p = pendingCapture; pendingCapture = null;
-    if (p && p.slot === selected && capturing) { capturing = false; assign(p.usage); }
-  }, 260);
+    if (!p) return;
+    const fromKeypad = lastKeypadPress >= p.at - 300 || pressed.slice(0, NUM_KEYS).some(Boolean);
+    if (!fromKeypad && p.slot === selected && capturing) { capturing = false; assign(p.usage); }
+  }, 450);
 }, true);
 
 async function assign(usage) {
@@ -1025,10 +1031,11 @@ async function poll() {
     pressed[i] = on;
     if (on && testing && i < NUM_KEYS) tested.add(i);
   }
-  // Pressing a key on the keypad selects it (and cancels a capture its own keystroke started).
+  // Pressing a key on the keypad only selects it, and drops a capture its own keystroke started.
+  if (newlyPressed >= 0) lastKeypadPress = Date.now();
   if (newlyPressed >= 0 && !testing) {
     pendingCapture = null;
-    select(newlyPressed);
+    select(newlyPressed, false);
   } else if (changed) render();
 }
 

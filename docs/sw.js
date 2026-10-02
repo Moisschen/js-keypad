@@ -1,6 +1,6 @@
 // Offline cache for the JS-Keypad mapper: the page and the firmware image.
 // Network first, so a fresh firmware is picked up as soon as there is internet again.
-const CACHE = 'js-keypad-v6';
+const CACHE = 'js-keypad-v7';
 const FILES = ['./', 'index.html', 'firmware.hex', 'firmware-version.txt', 'manifest.json', 'wiring-de.svg', 'wiring-en.svg'];
 
 self.addEventListener('install', (e) => {
