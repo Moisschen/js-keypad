@@ -634,9 +634,9 @@ const keyEls = [];  // per slot: { g, lbl, cap }
 function buildPad() {
   const svg = $('pad');
   svg.setAttribute('viewBox', `0 0 ${VB.x1 - VB.x0} ${VB.y1 - VB.y0}`);
-  // Print parts from above, back to front: wrist rest, main body, palm rest, joystick housing, key shell.
+  // Print parts from above, bottom to top: wrist rest, main body, joystick housing, key shell, palm rest (lies on top).
   const model = el('g', { transform: `translate(${-VB.x0} ${VB.y1}) scale(1 -1)` }, svg);
-  for (const part of ['wrist', 'body', 'palm', 'housing', 'shell']) el('path', { d: DEVICE.parts[part], class: 'part p-' + part }, model);
+  for (const part of ['wrist', 'body', 'housing', 'shell', 'palm']) el('path', { d: DEVICE.parts[part], class: 'part p-' + part }, model);
 
   const pt = ([x, y]) => [sx(x), sy(y)];
   const keyCap = (slot, quad) => {
