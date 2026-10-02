@@ -1,0 +1,1321 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2563eb">
+<title>JS-Keypad</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --card: #fff; --text: #1d2330; --muted: #6b7280; --line: #dde1e7;
+    --accent: #2563eb; --accent-text: #fff; --ok: #16a34a; --bad: #dc2626; --warn: #d97706; --pressed: #bbf7d0;
+    --shell: #e7eaef; --shell-line: #cfd5de; --key: #fdfdfe; --key-line: #b9c1cd; --key-shadow: #c8ced8; --sel: #dbe7ff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --card: #1b1f27; --text: #e6e8ec; --muted: #9aa3b2; --line: #2c323d;
+      --accent: #3b82f6; --ok: #22c55e; --bad: #f87171; --warn: #fbbf24; --pressed: #166534;
+      --shell: #232833; --shell-line: #343b48; --key: #2d3340; --key-line: #4a5263; --key-shadow: #15181e; --sel: #1e3a6e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 820px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 24px; margin: 0; letter-spacing: -.01em; }
+  .sub { color: var(--muted); margin: 4px 0 20px; }
+  .sub a, footer a { color: var(--accent); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 12px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .grow { flex: 1; }
+  button {
+    font: inherit; border: 1px solid var(--line); background: var(--card); color: var(--text);
+    border-radius: 8px; padding: 8px 14px; cursor: pointer;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  button.on { background: var(--sel); border-color: var(--accent); }
+  button:disabled { opacity: .45; cursor: default; }
+  #status { font-weight: 600; }
+  #status.ok { color: var(--ok); } #status.bad { color: var(--bad); }
+  input[type=range] { width: 100%; }
+  .hint { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+  .nosupport { border-color: var(--bad); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .two > .card { margin-bottom: 0; }
+  @media (max-width: 720px) { .two { grid-template-columns: 1fr; } }
+  .stack { margin-bottom: 14px; }
+
+  /* ---- Keypad picture ---- */
+  #pad { width: 100%; height: auto; display: block; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+  #pad .shell { fill: var(--shell); stroke: var(--shell-line); stroke-width: .6; }
+  #pad .palm { fill: none; stroke: var(--shell-line); stroke-width: .5; stroke-dasharray: 2 2; }
+  #pad .palmtext { fill: var(--muted); font: 3.4px "Segoe UI", system-ui, sans-serif; text-anchor: middle; }
+  #pad .key { cursor: pointer; outline: none; }
+  #pad .key .cap { fill: var(--key); stroke: var(--key-line); stroke-width: .45; transition: fill .08s; }
+  #pad .key .shadow { fill: var(--key-shadow); }
+  #pad .key:hover .cap, #pad .key:focus-visible .cap { stroke: var(--accent); }
+  #pad .key.sel .cap { stroke: var(--accent); stroke-width: 1.1; fill: var(--sel); }
+  #pad .key.on .cap { fill: var(--pressed); }
+  #pad .key .lbl { fill: var(--text); font: 600 5.2px "Segoe UI", system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  #pad .key .lbl.small { font-size: 3.5px; }
+  #pad .key.unbound .lbl { fill: var(--muted); font-weight: 400; }
+  #pad .key .pin { fill: var(--muted); font: 2.4px "Segoe UI", system-ui, sans-serif; pointer-events: none; }
+  #pad .key .check { fill: none; stroke: var(--ok); stroke-width: .8; stroke-linecap: round; stroke-linejoin: round; display: none; }
+  #pad .key.tested .check { display: inline; }
+  #pad.testing .key:not(.tested):not(.stickpart) .cap { stroke: var(--warn); stroke-dasharray: 1.5 1; }
+  #pad .stickpart.locked { cursor: default; }
+  #pad .stickpart.locked .lbl { fill: var(--muted); font-weight: 400; }
+  #pad .ring { fill: var(--shell); stroke: var(--shell-line); stroke-width: .6; }
+  #pad .fingers { fill: var(--muted); font: 3px "Segoe UI", system-ui, sans-serif; text-anchor: middle; }
+  #pad #stickDot { fill: var(--accent); opacity: .85; pointer-events: none; }
+
+  /* ---- Binding panel ---- */
+  #panel { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 14px; }
+  #panelHead { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  #panelTitle { font-weight: 600; }
+  #panelPin { color: var(--muted); font-size: 13px; }
+  #current { min-width: 64px; text-align: center; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--key-line);
+    background: var(--key); font-weight: 700; font-size: 17px; box-shadow: 0 2px 0 var(--key-shadow); }
+  #capture { margin: 12px 0 0; padding: 10px 12px; border-radius: 8px; border: 1px dashed var(--accent); color: var(--accent); font-weight: 600; }
+  #capture.idle { border-color: var(--line); color: var(--muted); font-weight: 400; cursor: pointer; }
+  .cats { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 8px; }
+  .cats button { padding: 4px 10px; font-size: 13px; border-radius: 999px; }
+  #choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; }
+  #choices button { padding: 7px 4px; font-size: 13px; min-height: 38px; }
+  #choices button.cur { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  #saveState { font-size: 13px; color: var(--muted); }
+  #saveState.ok { color: var(--ok); } #saveState.bad { color: var(--bad); }
+  #testInfo { font-size: 13px; color: var(--warn); }
+  #testInfo.ok { color: var(--ok); }
+
+  .stickbox { width: 120px; height: 120px; border: 1px solid var(--line); border-radius: 50%; position: relative; flex: none; }
+  .stickbox::before, .stickbox::after { content: ""; position: absolute; background: var(--line); }
+  .stickbox::before { left: 50%; top: 8px; bottom: 8px; width: 1px; }
+  .stickbox::after { top: 50%; left: 8px; right: 8px; height: 1px; }
+  #dot { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); left: 53px; top: 53px; z-index: 1; }
+  #live { color: var(--muted); font-size: 13px; }
+  #live.cal { color: var(--warn); font-weight: 600; }
+  .steampad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .steps { padding-left: 0; list-style: none; margin: 12px 0; display: grid; gap: 12px; }
+  .steps li { display: grid; gap: 4px; justify-items: start; }
+  .steps .hint { margin: 0; }
+  progress { width: 100%; height: 10px; margin-top: 4px; accent-color: var(--accent); }
+  #fwStatus.ok, #fwVersions.ok { color: var(--ok); font-weight: 600; }
+  #fwStatus.bad, #fwVersions.bad { color: var(--bad); font-weight: 600; }
+  .diag { margin: 10px 0 0; padding-left: 20px; }
+  .diag li { margin: 4px 0; }
+  .diag .ok { color: var(--ok); } .diag .bad { color: var(--bad); } .diag .warn { color: var(--warn); }
+  #diagStep.active { color: var(--text); font-weight: 600; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+  details[open] summary { margin-bottom: 12px; }
+  #guide { width: 100%; height: auto; }
+  #guide .ring2 { fill: none; stroke: var(--line); stroke-width: 2; }
+  #guide .dashed { stroke-dasharray: 4 5; }
+  #guide .knob { fill: var(--accent); }
+  #guide .warnfill { fill: var(--warn); }
+  #guide .arrow { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  #guide .glbl { fill: var(--text); font: 600 14px "Segoe UI", system-ui, sans-serif; }
+  #guide .head { fill: var(--muted); font: 600 12px "Segoe UI", system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+  #guide .gsub { fill: var(--muted); font: 13px "Segoe UI", system-ui, sans-serif; }
+  #guide .mid { text-anchor: middle; }
+  #guide .box { fill: none; stroke: var(--line); stroke-width: 1; }
+  #guide .usb { fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 24px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="row"><h1 class="grow">JS-Keypad</h1><button id="langBtn" title="Sprache / Language">EN</button></div>
+  <p class="sub"><span data-i18n="sub"></span> · <a href="https://github.com/multifex/prototypes/tree/main/jasp-keyboard-joystick" target="_blank" rel="noopener">inspired by Jasp</a></p>
+
+  <div class="card nosupport" id="nosupport" hidden data-i18n="nosupport"></div>
+
+  <div class="card">
+    <div class="row">
+      <span id="status" class="bad grow"></span>
+      <button id="connect" class="primary"></button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:6px">
+      <h2 class="grow" style="margin:0" data-i18n="hKeys"></h2>
+      <span id="testInfo" hidden></span>
+      <button id="testBtn" data-i18n="test"></button>
+    </div>
+    <svg id="pad" viewBox="0 0 10 10" role="group"></svg>
+
+    <div id="panel">
+      <div id="panelHead">
+        <div class="grow">
+          <div id="panelTitle"></div>
+          <div id="panelPin"></div>
+        </div>
+        <div id="current">–</div>
+      </div>
+      <div id="capture"></div>
+      <div class="cats" id="cats"></div>
+      <div id="choices"></div>
+      <div class="row" style="margin-top:10px">
+        <span id="saveState" class="grow"></span>
+      </div>
+    </div>
+
+    <div id="threshBox" style="margin-top:14px">
+      <label for="thresh" id="threshLabel"></label>
+      <input type="range" id="thresh" min="20" max="95" step="5" value="50" disabled>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button id="defaults" disabled data-i18n="defaults"></button>
+      <button id="backup" disabled data-i18n="backup"></button>
+      <button id="restore" disabled data-i18n="restore"></button>
+      <input type="file" id="restoreFile" accept="application/json" hidden>
+    </div>
+  </div>
+
+  <div class="two stack">
+    <div class="card">
+      <h2 data-i18n="hMode"></h2>
+      <div id="modeLabel">–</div>
+      <div class="row" style="margin-top:8px">
+        <button id="mode0" class="grow" disabled data-i18n="modeKeyboard"></button>
+        <button id="mode1" class="grow" disabled data-i18n="modeGamepad"></button>
+        <button id="mode2" class="grow" disabled data-i18n="modeMouse"></button>
+      </div>
+      <div id="speedBox" style="margin-top:12px" hidden>
+        <label for="speed" id="speedLabel"></label>
+        <input type="range" id="speed" min="1" max="20" step="1" value="8" disabled>
+      </div>
+      <p class="hint" data-i18n="modeHint"></p>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="hStick"></h2>
+      <div class="row">
+        <div class="stickbox"><div id="dot"></div></div>
+        <div class="grow">
+          <div id="live">–</div>
+          <button id="cal" style="margin-top:10px" disabled></button>
+        </div>
+      </div>
+      <p class="hint" data-i18n="calHint"></p>
+      <div style="margin-top:12px">
+        <label for="rot" id="rotLabel"></label>
+        <div class="row">
+          <input type="range" id="rot" class="grow" min="-90" max="90" step="1" value="0" disabled>
+          <button id="rotReset" disabled>0°</button>
+        </div>
+        <p class="hint" data-i18n="rotHint"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="steamCard" hidden>
+    <h2 data-i18n="hSteam"></h2>
+    <div class="steampad" id="steampad"></div>
+    <p class="hint" data-i18n="steamHint"></p>
+  </div>
+
+  <div class="card">
+    <details>
+      <summary data-i18n="hGuide"></summary>
+      <svg id="guide" viewBox="0 0 520 330" role="img">
+        <rect x="2" y="2" width="516" height="214" rx="10" class="box"/>
+        <g transform="translate(16 12)">
+          <path d="M6 14 h22 M28 8 v12 h10 v-12 z M12 8 l-6 6 l6 6 z" class="usb"/>
+          <text x="46" y="19" class="head" data-i18n="gPlugHead"></text>
+        </g>
+        <g transform="translate(0 20)">
+          <circle cx="118" cy="110" r="72" class="ring2"/>
+          <circle cx="118" cy="110" r="48" class="ring2 dashed"/>
+          <circle cx="118" cy="110" r="18" class="knob"/>
+          <g class="arrow">
+            <path d="M118 84 L118 52 M111 61 L118 50 L125 61"/>
+            <path d="M144 110 L176 110 M167 103 L178 110 L167 117"/>
+            <path d="M118 136 L118 168 M111 159 L118 170 L125 159"/>
+          </g>
+          <text x="118" y="42" class="glbl mid" data-i18n="gUp"></text>
+          <text x="186" y="115" class="glbl" data-i18n="gRight"></text>
+          <text x="118" y="190" class="glbl mid" data-i18n="gDown"></text>
+          <text x="118" y="206" class="gsub mid" data-i18n="gHoldWhilePlug"></text>
+        </g>
+        <g transform="translate(250 56)">
+          <circle cx="12" cy="10" r="11" class="knob"/>
+          <text x="36" y="8" class="glbl" data-i18n="gTapTitle"></text>
+          <text x="36" y="26" class="gsub" data-i18n="gTapText"></text>
+          <g transform="translate(0 56)">
+            <circle cx="12" cy="10" r="11" class="knob warnfill"/>
+            <text x="36" y="8" class="glbl" data-i18n="gHoldTitle"></text>
+            <text x="36" y="26" class="gsub" data-i18n="gHoldText"></text>
+          </g>
+        </g>
+        <rect x="2" y="228" width="516" height="98" rx="10" class="box"/>
+        <text x="18" y="252" class="head" data-i18n="gRunHead"></text>
+        <g transform="translate(18 266)">
+          <circle cx="12" cy="10" r="11" class="knob"/>
+          <text x="36" y="8" class="glbl" data-i18n="gClickTitle"></text>
+          <text x="36" y="26" class="gsub" data-i18n="gClickText"></text>
+        </g>
+        <g transform="translate(268 266)">
+          <circle cx="12" cy="10" r="11" class="knob"/>
+          <text x="36" y="8" class="glbl" data-i18n="gMouseTitle"></text>
+          <text x="36" y="26" class="gsub" data-i18n="gMouseText"></text>
+        </g>
+      </svg>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="hDiag"></h2>
+    <div id="diagStep" class="hint" style="margin-top:0" data-i18n="diagIntro"></div>
+    <div class="row" style="margin-top:10px">
+      <button id="diagBtn" disabled data-i18n="diagStart"></button>
+    </div>
+    <ul id="diagResult" class="diag"></ul>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="hFw"></h2>
+    <div class="row">
+      <button id="fwUpdate" class="primary" disabled data-i18n="fwUpdate"></button>
+      <span class="hint grow" style="margin:0" data-i18n="fwUpdateHint"></span>
+    </div>
+    <div id="fwVersions" class="hint"></div>
+    <p class="hint" data-i18n="fwManual"></p>
+    <ol class="steps">
+      <li><button id="fwReset" data-i18n="fwReset"></button>
+        <span class="hint" data-i18n="fwResetHint"></span></li>
+      <li><button id="fwFlash" class="primary" data-i18n="fwFlash"></button>
+        <span class="hint" data-i18n="fwFlashHint"></span></li>
+    </ol>
+    <progress id="fwProgress" max="1" value="0" hidden></progress>
+    <div id="fwStatus" class="hint"></div>
+  </div>
+
+  <footer>JS-Keypad · <a href="https://github.com/multifex/prototypes/tree/main/jasp-keyboard-joystick" target="_blank" rel="noopener">inspired by Jasp</a></footer>
+</main>
+
+<script>
+// ---- Texts (German / English) ----
+const STR = {
+  de: {
+    sub: 'Tasten belegen, Stick kalibrieren und Firmware aufspielen – direkt im Browser.',
+    nosupport: 'Dieser Browser kann nicht mit USB-Geräten sprechen. Bitte <b>Chrome</b> oder <b>Edge</b> am PC verwenden.',
+    connect: 'Verbinden', disconnect: 'Trennen', notConnected: 'Nicht verbunden', connected: 'Verbunden',
+    connectFailed: (m) => `Verbinden fehlgeschlagen – ist noch ein anderes Programm mit dem Keypad verbunden? (${m})`,
+    connLost: 'Verbindung getrennt', unplugged: 'Keypad abgesteckt',
+    notKeypad: 'Verbunden, aber auf dem Gerät läuft keine JS-Keypad-Firmware – unten „Firmware aktualisieren“ klicken.',
+    hKeys: 'Tastenbelegung',
+    fingers: ['Zeigefinger', 'Mittelfinger', 'Ringfinger', 'Kleiner Finger'],
+    rows: ['obere Reihe', 'mittlere Reihe', 'untere Reihe'],
+    stickSlots: ['Stick hoch', 'Stick runter', 'Stick links', 'Stick rechts', 'Stick-Klick'],
+    pin: (p) => `Pin ${p}`, stickPinHint: 'Daumen-Stick',
+    palm: 'Handballen', thumb: 'Daumen',
+    pickKey: 'Auf eine Taste im Bild klicken – oder eine Taste am Keypad drücken –, um sie zu belegen.',
+    capturing: 'Jetzt die gewünschte Taste auf deiner PC-Tastatur drücken … oder unten auswählen.',
+    captureIdle: 'Hier klicken, um wieder per Tastendruck zu belegen.',
+    needConnect: 'Erst oben verbinden – dann wird jede Änderung sofort auf dem Keypad gespeichert.',
+    lockedGamepad: 'Im Controller-Modus ist der Stick ein Analog-Stick, der Klick ist Knopf 1. Belegbar nur im Tastatur-Modus.',
+    lockedMouse: 'Im Maus-Modus bewegt der Stick den Mauszeiger, Klick = links, halten = rechts. Belegbar nur im Tastatur-Modus.',
+    lockedShort: { 1: 'Stick', 2: 'Maus' }, clickShort: { 1: 'Knopf 1', 2: 'Klick' },
+    cats: { letters: 'Buchstaben', digits: 'Zahlen', fkeys: 'F-Tasten', control: 'Steuerung', mods: 'Shift/Strg/Alt',
+      numpad: 'Ziffernblock', symbols: 'Zeichen' },
+    none: 'Keine', unbound: 'nicht belegt',
+    saving: 'Speichere…', saved: 'Gespeichert – bleibt auch nach dem Abstecken', saveFailed: 'Speichern fehlgeschlagen',
+    restored: 'Standardbelegung wiederhergestellt',
+    thresh: (v) => `Stick-Auslösepunkt: ${v} % Stickweg`,
+    defaults: 'Standardbelegung', backup: 'Einstellungen sichern', restore: 'Sicherung laden',
+    defaultsConfirm: 'Alle 17 Belegungen auf den Standard zurücksetzen?',
+    backupDone: 'Einstellungen als Datei gespeichert', restoreDone: 'Sicherung übernommen',
+    restoreFailed: 'Datei passt nicht zum JS-Keypad',
+    test: 'Tastentest', testStop: 'Test beenden',
+    testLeft: (n, list) => `Noch ${n} offen: ${list}`, testDone: 'Alle 12 Tasten kommen an ✓',
+    keyNames: {
+      Enter: ['Enter', 'Enter'], Escape: ['Esc', 'Esc'], Backspace: ['Rücktaste', '⌫'], Tab: ['Tab', 'Tab'],
+      Space: ['Leertaste', 'Leer'], CapsLock: ['Feststelltaste', 'Caps'], PrintScreen: ['Druck', 'Druck'],
+      ScrollLock: ['Rollen', 'Rollen'], Pause: ['Pause', 'Pause'], Insert: ['Einfügen', 'Einfg'], Home: ['Pos1', 'Pos1'],
+      PageUp: ['Bild auf', 'Bild↑'], Delete: ['Entfernen', 'Entf'], End: ['Ende', 'Ende'], PageDown: ['Bild ab', 'Bild↓'],
+      ArrowRight: ['Pfeil rechts', '→'], ArrowLeft: ['Pfeil links', '←'], ArrowDown: ['Pfeil runter', '↓'], ArrowUp: ['Pfeil hoch', '↑'],
+      NumLock: ['Num-Taste', 'Num'], ContextMenu: ['Menütaste', 'Menü'],
+      ControlLeft: ['Strg links', 'Strg'], ShiftLeft: ['Shift links', 'Shift'], AltLeft: ['Alt', 'Alt'], MetaLeft: ['Windows links', 'Win'],
+      ControlRight: ['Strg rechts', 'Strg R'], ShiftRight: ['Shift rechts', 'Shift R'], AltRight: ['Alt Gr', 'AltGr'], MetaRight: ['Windows rechts', 'Win R'],
+      NumpadDivide: ['Ziffernblock /', 'Num /'], NumpadMultiply: ['Ziffernblock *', 'Num *'], NumpadSubtract: ['Ziffernblock −', 'Num −'],
+      NumpadAdd: ['Ziffernblock +', 'Num +'], NumpadEnter: ['Ziffernblock Enter', 'Num ⏎'], NumpadDecimal: ['Ziffernblock ,', 'Num ,'],
+      Numpad: (d) => [`Ziffernblock ${d}`, `Num ${d}`],
+    },
+    hMode: 'Stick-Modus', modeHint: 'Die 12 Tasten sind immer Tastatur-Tasten, der Modus gilt nur für den Stick. Ohne PC umschalten: beim Einstecken Stick halten (hoch = Tastatur, rechts = Controller, runter = Maus) oder kurz klicken, das schaltet reihum weiter. Beim Umschalten startet das Keypad neu – danach einmal neu verbinden.',
+    modeGamepad: 'Controller', modeKeyboard: 'Tastatur', modeMouse: 'Maus', modeUnknown: 'unbekannt',
+    modeNow: (m) => `Aktiver Modus: ${m}`,
+    speed: (v) => `Mausgeschwindigkeit: ${v} von 20`,
+    rebooting: 'Keypad startet neu – gleich auf „Verbinden“ klicken',
+    hStick: 'Stick & Kalibrierung', cal: 'Kalibrieren', calDone: 'Fertig',
+    calHint: 'Stick loslassen → „Kalibrieren“ → Stick mehrmals ganz außen im Kreis drehen → „Fertig“.',
+    calRunning: 'KALIBRIERUNG LÄUFT – Stick jetzt außen kreisen',
+    live: (rx, ry, x, y) => `Roh X=${rx} Y=${ry} · X=${x} % Y=${y} %`,
+    rot: (v) => `Stickwinkel: ${v > 0 ? '+' : ''}${v}°${v > 0 ? ' (im Uhrzeigersinn)' : v < 0 ? ' (gegen Uhrzeigersinn)' : ''}`,
+    rotHint: 'Falls der Stick schief sitzt: Stick gerade nach oben drücken und schieben, bis der Punkt genau oben steht.',
+    hGuide: 'Stick-Gesten beim Einstecken',
+    gUp: 'Tastatur', gRight: 'Controller', gDown: 'Maus',
+    gHoldWhilePlug: 'Richtung halten, bis es sich meldet',
+    gPlugHead: 'Beim Einstecken des USB-Kabels: Stick so halten',
+    gRunHead: 'Im Betrieb',
+    gClickTitle: 'Stick kurz drücken', gClickText: 'löst die belegte Taste aus',
+    gTapTitle: 'Stick kurz drücken', gTapText: 'schaltet zum nächsten Modus weiter',
+    gHoldTitle: 'Stick 3 Sekunden halten', gHoldText: 'öffnet den Bootloader zum Flashen',
+    gMouseTitle: 'Im Maus-Modus halten', gMouseText: 'Rechtsklick, solange gehalten',
+    hDiag: 'Verdrahtungs-Check', diagIntro: 'Prüft Stick-Achsen, Stick-Klick und alle Tasten-Pins auf typische Verdrahtungsfehler. Die einzelnen Tasten prüfst du am schnellsten mit „Tastentest“ oben.',
+    diagStart: 'Check starten', next: 'Weiter', measuring: 'Messe…',
+    diag1: 'Schritt 1/4: Keypad nicht berühren, dann „Weiter“.',
+    diag2: 'Schritt 2/4: Stick nach RECHTS bis zum Anschlag halten und „Weiter“ klicken (weiter halten, bis „Messe…“ weg ist).',
+    diag2m: 'Messe… Stick weiter rechts halten',
+    diag3: 'Schritt 3/4: Stick nach OBEN bis zum Anschlag halten und „Weiter“ klicken.', diag3m: 'Messe… Stick weiter oben halten',
+    diag4: 'Schritt 4/4: Stick REINDRÜCKEN und gedrückt halten, dann „Weiter“.', diag4m: 'Messe… weiter gedrückt halten',
+    axisX: 'X-Achse (VRx)', axisY: 'Y-Achse (VRy)', dirRight: 'Stick rechts', dirUp: 'Stick oben',
+    dLow: (n) => `${n}: Wert fast 0 – Signal hängt an GND, oder VCC am Stick fehlt.`,
+    dHigh: (n) => `${n}: Wert fast Maximum – Signal hängt an VCC, oder GND am Stick fehlt.`,
+    dNoisy: (n, s) => `${n}: Wert springt stark (±${s}) – Signalkabel fehlt/lose oder GND/VCC am Stick lose.`,
+    dOffCenter: (n, a) => `${n}: Mitte liegt weit außen (${a} von 1023) – einmal kalibrieren.`,
+    dRestOk: (n, a, s) => `${n}: Ruheposition sauber (${a}, Rauschen ±${s}).`,
+    dClickStuck: (pin) => `Stick-Klick meldet „gedrückt“, obwohl losgelassen – SW (Pin ${pin}) hat Kontakt zu GND.`,
+    dKeyStuck: (pin, name) => `${name} (Pin ${pin}) meldet „gedrückt“, obwohl niemand drückt – Lötbrücke oder blankes Kabel an GND?`,
+    dPinGnd: (pin) => `Pin ${pin} liegt dauerhaft an GND – da steckt vermutlich ein Kabel falsch.`,
+    dKeysOk: 'Tasten-Pins: keiner hängt dauerhaft an GND.',
+    dNoMove: (n) => `${n}: keine Bewegung erkannt. VCC- oder GND-Kabel zum Stick prüfen (oder Stick nicht bis zum Anschlag gedrückt).`,
+    dDirOk: (n, pin) => `${n}: kommt richtig an ${pin} an.`,
+    dSkew: (n) => `${n}: die andere Achse bewegt sich deutlich mit – Stick sitzt schief. Mit dem Stickwinkel ausgleichen.`,
+    dSwapped: (n, got, want) => `${n} kommt an ${got} statt ${want} an: VRx und VRy sind vertauscht.`,
+    dClickOk: (pin) => `Stick-Klick: kommt richtig an (Pin ${pin}).`,
+    dClickWrong: (pins) => `Stick-Klick kommt an Pin ${pins} an – das SW-Kabel gehört an Pin 14 oder 16.`,
+    dClickNone: 'Stick-Klick nicht erkannt – SW-Kabel oder GND zum Stick fehlt.',
+    dSummaryBad: (n) => `${n} Problem(e) gefunden:`, dSummaryOk: 'Alles richtig verdrahtet.',
+    dAborted: (m) => 'Check abgebrochen: ' + m,
+    hFw: 'Neues Keypad einrichten / Firmware aktualisieren', fwUpdate: 'Firmware aktualisieren',
+    verLine: (have, latest) => `Aufgespielt: ${have} · Neueste: ${latest}`,
+    verOld: ' – Update verfügbar', verCurrent: ' – aktuell', verUnknown: 'Aufgespielt: keine JS-Keypad-Firmware',
+    fwUpdateHint: 'Für ein verbundenes Keypad – ein Klick, Kalibrierung und Stickwinkel bleiben erhalten.',
+    fwManual: 'Neuer Pro Micro, oder das Update klappt nicht? Dann manuell (Arduino-Bootloader nötig – bei gekauften Pro Micros ist der drauf):',
+    fwReset: '1. Keypad neu starten',
+    fwResetHint: 'Im Fenster das Gerät wählen (z.&nbsp;B. „Arduino Leonardo“, „JS-Keypad“, „Serielles USB-Gerät“). Steht dort nichts: <b>Stick-Klick beim Einstecken 3 Sekunden gedrückt halten</b>, dann gleich Schritt 2.',
+    fwFlash: '2. Firmware aufspielen',
+    fwFlashHint: 'Innerhalb von <b>8 Sekunden</b> das Gerät im Fenster wählen (heißt jetzt oft anders, z.&nbsp;B. „Arduino Leonardo bootloader“).',
+    fwToBoot: 'Keypad startet in den Bootloader – jetzt Schritt 2 (innerhalb von 8 Sekunden).',
+    fwResetFailed: (m) => `Neustart fehlgeschlagen: ${m} – Stick-Klick beim Einstecken 3 Sekunden halten, dann Schritt 2.`,
+    fwUpdating: 'Update läuft…', fwBooting: 'Keypad startet in den Bootloader…',
+    fwPick: 'Bitte das Gerät im Fenster wählen (heißt jetzt z. B. „Arduino Leonardo bootloader“).',
+    fwLoadFailed: (m) => 'Firmware konnte nicht geladen werden: ' + m,
+    fwErasing: 'Lösche…', fwWriting: (p) => `Schreibe… ${p} %`, fwVerifying: 'Prüfe…',
+    fwDone: (n) => `Fertig – ${n} Bytes aufgespielt und geprüft. In ein paar Sekunden oben auf „Verbinden“ und einmal kalibrieren.`,
+    fwNoDevice: 'Kein Gerät gewählt.',
+    fwFailed: (m) => `Fehlgeschlagen: ${m}. Zu spät gewählt? Dann Schritt 1 wiederholen.`,
+    eChecksum: 'Firmware-Datei beschädigt (Prüfsumme)', eTooBig: 'Firmware zu groß für den Bootloader-Bereich',
+    eNoReply: 'Bootloader antwortet nicht', eAborted: 'Verbindung abgebrochen',
+    eNoBootloader: (id) => `Kein Arduino-Bootloader gefunden (Antwort: ${id})`, eRejected: (w) => `${w} abgelehnt`,
+    eVerify: (b) => `Prüfung fehlgeschlagen bei Byte ${b}`,
+    stepErase: 'Löschen', stepAddress: 'Adresse', stepWrite: 'Schreiben', stepExit: 'Beenden',
+    hSteam: 'Steam-Einrichtung (Controller-Modus)',
+    steamHint: 'Den Knopf klicken, den Steam gerade verlangt. Alle anderen Knöpfe in Steam überspringen.',
+  },
+  en: {
+    sub: 'Map keys, calibrate the stick and flash firmware – right in your browser.',
+    nosupport: 'This browser can’t talk to USB devices. Please use <b>Chrome</b> or <b>Edge</b> on a PC.',
+    connect: 'Connect', disconnect: 'Disconnect', notConnected: 'Not connected', connected: 'Connected',
+    connectFailed: (m) => `Connecting failed – is another program connected to the keypad? (${m})`,
+    connLost: 'Connection lost', unplugged: 'Keypad unplugged',
+    notKeypad: 'Connected, but the device isn’t running JS-Keypad firmware – click “Update firmware” below.',
+    hKeys: 'Key mapping',
+    fingers: ['Index finger', 'Middle finger', 'Ring finger', 'Little finger'],
+    rows: ['top row', 'home row', 'bottom row'],
+    stickSlots: ['Stick up', 'Stick down', 'Stick left', 'Stick right', 'Stick click'],
+    pin: (p) => `Pin ${p}`, stickPinHint: 'Thumb stick',
+    palm: 'Palm', thumb: 'Thumb',
+    pickKey: 'Click a key in the picture – or press a key on the keypad – to map it.',
+    capturing: 'Now press the key you want on your PC keyboard … or pick it below.',
+    captureIdle: 'Click here to map by key press again.',
+    needConnect: 'Connect first – then every change is saved on the keypad right away.',
+    lockedGamepad: 'In controller mode the stick is an analog stick and the click is button 1. Mappable in keyboard mode only.',
+    lockedMouse: 'In mouse mode the stick moves the pointer, click = left, hold = right. Mappable in keyboard mode only.',
+    lockedShort: { 1: 'Stick', 2: 'Mouse' }, clickShort: { 1: 'Button 1', 2: 'Click' },
+    cats: { letters: 'Letters', digits: 'Digits', fkeys: 'F keys', control: 'Control', mods: 'Shift/Ctrl/Alt',
+      numpad: 'Numpad', symbols: 'Symbols' },
+    none: 'None', unbound: 'not mapped',
+    saving: 'Saving…', saved: 'Saved – stays on the keypad when unplugged', saveFailed: 'Saving failed',
+    restored: 'Default mapping restored',
+    thresh: (v) => `Stick trigger point: ${v} % travel`,
+    defaults: 'Default mapping', backup: 'Back up settings', restore: 'Load backup',
+    defaultsConfirm: 'Reset all 17 mappings to the defaults?',
+    backupDone: 'Settings saved to a file', restoreDone: 'Backup applied',
+    restoreFailed: 'That file does not match the JS-Keypad',
+    test: 'Key test', testStop: 'End test',
+    testLeft: (n, list) => `${n} left: ${list}`, testDone: 'All 12 keys arrive ✓',
+    keyNames: {
+      Enter: ['Enter', 'Enter'], Escape: ['Esc', 'Esc'], Backspace: ['Backspace', '⌫'], Tab: ['Tab', 'Tab'],
+      Space: ['Space', 'Space'], CapsLock: ['Caps Lock', 'Caps'], PrintScreen: ['Print Screen', 'PrtSc'],
+      ScrollLock: ['Scroll Lock', 'ScrLk'], Pause: ['Pause', 'Pause'], Insert: ['Insert', 'Ins'], Home: ['Home', 'Home'],
+      PageUp: ['Page Up', 'PgUp'], Delete: ['Delete', 'Del'], End: ['End', 'End'], PageDown: ['Page Down', 'PgDn'],
+      ArrowRight: ['Arrow right', '→'], ArrowLeft: ['Arrow left', '←'], ArrowDown: ['Arrow down', '↓'], ArrowUp: ['Arrow up', '↑'],
+      NumLock: ['Num Lock', 'Num'], ContextMenu: ['Menu key', 'Menu'],
+      ControlLeft: ['Left Ctrl', 'Ctrl'], ShiftLeft: ['Left Shift', 'Shift'], AltLeft: ['Left Alt', 'Alt'], MetaLeft: ['Left Windows', 'Win'],
+      ControlRight: ['Right Ctrl', 'Ctrl R'], ShiftRight: ['Right Shift', 'Shift R'], AltRight: ['Right Alt / AltGr', 'AltGr'], MetaRight: ['Right Windows', 'Win R'],
+      NumpadDivide: ['Numpad /', 'Num /'], NumpadMultiply: ['Numpad *', 'Num *'], NumpadSubtract: ['Numpad −', 'Num −'],
+      NumpadAdd: ['Numpad +', 'Num +'], NumpadEnter: ['Numpad Enter', 'Num ⏎'], NumpadDecimal: ['Numpad .', 'Num .'],
+      Numpad: (d) => [`Numpad ${d}`, `Num ${d}`],
+    },
+    hMode: 'Stick mode', modeHint: 'The 12 keys are always keyboard keys; the mode only affects the stick. Switch without a PC: while plugging in hold the stick (up = keyboard, right = controller, down = mouse) or tap the click to cycle through the modes. Switching restarts the keypad – reconnect afterwards.',
+    modeGamepad: 'Controller', modeKeyboard: 'Keyboard', modeMouse: 'Mouse', modeUnknown: 'unknown',
+    modeNow: (m) => `Active mode: ${m}`,
+    speed: (v) => `Mouse speed: ${v} of 20`,
+    rebooting: 'Keypad is restarting – click “Connect” in a moment',
+    hStick: 'Stick & calibration', cal: 'Calibrate', calDone: 'Done',
+    calHint: 'Let go of the stick → “Calibrate” → circle the stick along its outer edge a few times → “Done”.',
+    calRunning: 'CALIBRATING – circle the stick along its edge now',
+    live: (rx, ry, x, y) => `Raw X=${rx} Y=${ry} · X=${x} % Y=${y} %`,
+    rot: (v) => `Stick angle: ${v > 0 ? '+' : ''}${v}°${v > 0 ? ' (clockwise)' : v < 0 ? ' (counter-clockwise)' : ''}`,
+    rotHint: 'If the stick sits crooked: push it straight up and move the slider until the dot is exactly at the top.',
+    hGuide: 'Stick gestures while plugging in',
+    gUp: 'Keyboard', gRight: 'Controller', gDown: 'Mouse',
+    gHoldWhilePlug: 'Hold the direction until it shows up',
+    gPlugHead: 'While plugging the USB cable in, hold the stick like this',
+    gRunHead: 'While running',
+    gClickTitle: 'Tap the stick', gClickText: 'triggers the mapped key',
+    gTapTitle: 'Tap the stick', gTapText: 'switches to the next mode',
+    gHoldTitle: 'Hold the stick for 3 seconds', gHoldText: 'opens the bootloader for flashing',
+    gMouseTitle: 'Hold in mouse mode', gMouseText: 'right click while held',
+    hDiag: 'Wiring check', diagIntro: 'Checks stick axes, stick click and all key pins for common wiring mistakes. The quickest way to check each key is “Key test” above.',
+    diagStart: 'Start check', next: 'Next', measuring: 'Measuring…',
+    diag1: 'Step 1/4: don’t touch the keypad, then “Next”.',
+    diag2: 'Step 2/4: hold the stick fully RIGHT and click “Next” (keep holding until “Measuring…” is gone).',
+    diag2m: 'Measuring… keep holding right',
+    diag3: 'Step 3/4: hold the stick fully UP and click “Next”.', diag3m: 'Measuring… keep holding up',
+    diag4: 'Step 4/4: PRESS the stick down and keep it pressed, then “Next”.', diag4m: 'Measuring… keep it pressed',
+    axisX: 'X axis (VRx)', axisY: 'Y axis (VRy)', dirRight: 'Stick right', dirUp: 'Stick up',
+    dLow: (n) => `${n}: value almost 0 – signal is shorted to GND, or VCC to the stick is missing.`,
+    dHigh: (n) => `${n}: value almost maximum – signal is shorted to VCC, or GND to the stick is missing.`,
+    dNoisy: (n, s) => `${n}: value jumps a lot (±${s}) – signal wire missing/loose, or GND/VCC to the stick loose.`,
+    dOffCenter: (n, a) => `${n}: center is far off (${a} of 1023) – calibrate once.`,
+    dRestOk: (n, a, s) => `${n}: resting position clean (${a}, noise ±${s}).`,
+    dClickStuck: (pin) => `Stick click reads “pressed” while released – SW (pin ${pin}) touches GND.`,
+    dKeyStuck: (pin, name) => `${name} (pin ${pin}) reads “pressed” although nobody presses it – solder bridge or bare wire touching GND?`,
+    dPinGnd: (pin) => `Pin ${pin} is permanently at GND – a wire is probably in the wrong place.`,
+    dKeysOk: 'Key pins: none is stuck at GND.',
+    dNoMove: (n) => `${n}: no movement detected. Check the VCC and GND wires to the stick (or it wasn’t pushed all the way).`,
+    dDirOk: (n, pin) => `${n}: arrives correctly at ${pin}.`,
+    dSkew: (n) => `${n}: the other axis moves noticeably too – the stick sits crooked. Fix it with the stick angle.`,
+    dSwapped: (n, got, want) => `${n} arrives at ${got} instead of ${want}: VRx and VRy are swapped.`,
+    dClickOk: (pin) => `Stick click: arrives correctly (pin ${pin}).`,
+    dClickWrong: (pins) => `Stick click arrives at pin ${pins} – the SW wire belongs on pin 14 or 16.`,
+    dClickNone: 'Stick click not detected – SW wire or GND to the stick is missing.',
+    dSummaryBad: (n) => `${n} problem(s) found:`, dSummaryOk: 'Everything is wired correctly.',
+    dAborted: (m) => 'Check aborted: ' + m,
+    hFw: 'Set up a new keypad / update firmware', fwUpdate: 'Update firmware',
+    verLine: (have, latest) => `Installed: ${have} · Latest: ${latest}`,
+    verOld: ' – update available', verCurrent: ' – up to date', verUnknown: 'Installed: no JS-Keypad firmware',
+    fwUpdateHint: 'For a connected keypad – one click, calibration and stick angle are kept.',
+    fwManual: 'New Pro Micro, or the update doesn’t work? Do it manually (needs the Arduino bootloader – bought Pro Micros have it):',
+    fwReset: '1. Restart keypad',
+    fwResetHint: 'Pick the device in the dialog (e.g. “Arduino Leonardo”, “JS-Keypad”, “USB Serial Device”). Nothing listed? <b>Hold the stick click for 3 seconds while plugging in</b>, then go straight to step 2.',
+    fwFlash: '2. Flash firmware',
+    fwFlashHint: 'Pick the device in the dialog within <b>8 seconds</b> (it often has a different name now, e.g. “Arduino Leonardo bootloader”).',
+    fwToBoot: 'Keypad is starting its bootloader – now step 2 (within 8 seconds).',
+    fwResetFailed: (m) => `Restart failed: ${m} – hold the stick click for 3 seconds while plugging in, then step 2.`,
+    fwUpdating: 'Updating…', fwBooting: 'Keypad is starting its bootloader…',
+    fwPick: 'Please pick the device in the dialog (now named e.g. “Arduino Leonardo bootloader”).',
+    fwLoadFailed: (m) => 'Could not load the firmware: ' + m,
+    fwErasing: 'Erasing…', fwWriting: (p) => `Writing… ${p} %`, fwVerifying: 'Verifying…',
+    fwDone: (n) => `Done – ${n} bytes flashed and verified. In a few seconds click “Connect” above and calibrate once.`,
+    fwNoDevice: 'No device selected.',
+    fwFailed: (m) => `Failed: ${m}. Picked too late? Repeat step 1.`,
+    eChecksum: 'firmware file damaged (checksum)', eTooBig: 'firmware too large for the bootloader area',
+    eNoReply: 'bootloader not responding', eAborted: 'connection lost',
+    eNoBootloader: (id) => `no Arduino bootloader found (reply: ${id})`, eRejected: (w) => `${w} rejected`,
+    eVerify: (b) => `verification failed at byte ${b}`,
+    stepErase: 'erase', stepAddress: 'address', stepWrite: 'write', stepExit: 'exit',
+    hSteam: 'Steam setup (controller mode)',
+    steamHint: 'Click the button Steam is asking for. Skip every other button in Steam.',
+  },
+};
+
+let lang = (() => { try { return localStorage.getItem('jsKeypadLang'); } catch { return null; } })()
+  || ((navigator.language || 'en').toLowerCase().startsWith('de') ? 'de' : 'en');
+const t = (key, ...args) => { const v = STR[lang][key]; return typeof v === 'function' ? v(...args) : v; };
+const $ = (id) => document.getElementById(id);
+
+// ---- Keys: HID usage ID <-> KeyboardEvent.code. The firmware stores usage IDs, so a binding is
+// the same physical key on every layout; labels come from the PC's own layout when the browser
+// can tell (navigator.keyboard.getLayoutMap), otherwise from the US layout. ----
+const KEYS = [];  // { usage, code, cat, us }
+const byUsage = new Map(), byCode = new Map();
+function addKey(usage, code, cat, us) {
+  const k = { usage, code, cat, us };
+  KEYS.push(k); byUsage.set(usage, k); byCode.set(code, k);
+}
+[...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].forEach((c, i) => addKey(0x04 + i, 'Key' + c, 'letters', c));
+[...'1234567890'].forEach((c, i) => addKey(0x1E + i, 'Digit' + c, 'digits', c));
+[['Enter', 0x28], ['Escape', 0x29], ['Backspace', 0x2A], ['Tab', 0x2B], ['Space', 0x2C]]
+  .forEach(([code, u]) => addKey(u, code, 'control'));
+[['Minus', 0x2D, '-'], ['Equal', 0x2E, '='], ['BracketLeft', 0x2F, '['], ['BracketRight', 0x30, ']'],
+ ['Backslash', 0x31, '\\'], ['Semicolon', 0x33, ';'], ['Quote', 0x34, "'"], ['Backquote', 0x35, '`'],
+ ['Comma', 0x36, ','], ['Period', 0x37, '.'], ['Slash', 0x38, '/'], ['IntlBackslash', 0x64, '<']]
+  .forEach(([code, u, us]) => addKey(u, code, 'symbols', us));
+addKey(0x39, 'CapsLock', 'control');
+for (let i = 0; i < 12; i++) addKey(0x3A + i, 'F' + (i + 1), 'fkeys', 'F' + (i + 1));
+[['PrintScreen', 0x46], ['ScrollLock', 0x47], ['Pause', 0x48], ['Insert', 0x49], ['Home', 0x4A], ['PageUp', 0x4B],
+ ['Delete', 0x4C], ['End', 0x4D], ['PageDown', 0x4E], ['ArrowRight', 0x4F], ['ArrowLeft', 0x50], ['ArrowDown', 0x51],
+ ['ArrowUp', 0x52], ['ContextMenu', 0x65]].forEach(([code, u]) => addKey(u, code, 'control'));
+[['NumLock', 0x53], ['NumpadDivide', 0x54], ['NumpadMultiply', 0x55], ['NumpadSubtract', 0x56], ['NumpadAdd', 0x57],
+ ['NumpadEnter', 0x58]].forEach(([code, u]) => addKey(u, code, 'numpad'));
+[...'123456789'].forEach((d, i) => addKey(0x59 + i, 'Numpad' + d, 'numpad'));
+addKey(0x62, 'Numpad0', 'numpad'); addKey(0x63, 'NumpadDecimal', 'numpad');
+for (let i = 12; i < 24; i++) addKey(0x68 + i - 12, 'F' + (i + 1), 'fkeys', 'F' + (i + 1));
+['ControlLeft', 'ShiftLeft', 'AltLeft', 'MetaLeft', 'ControlRight', 'ShiftRight', 'AltRight', 'MetaRight']
+  .forEach((code, i) => addKey(0xE0 + i, code, 'mods'));
+const CATS = ['letters', 'digits', 'control', 'mods', 'fkeys', 'symbols', 'numpad'];
+
+let layoutMap = null;
+navigator.keyboard?.getLayoutMap?.().then((m) => { layoutMap = m; render(); }).catch(() => {});
+
+// [long, short] name of a usage ID.
+function keyLabel(usage) {
+  if (!usage) return [t('unbound'), '–'];
+  const k = byUsage.get(usage);
+  if (!k) return ['#' + usage, '#' + usage];
+  const names = t('keyNames');
+  if (names[k.code]) return names[k.code];
+  const pad = /^Numpad(\d)$/.exec(k.code);
+  if (pad) return names.Numpad(pad[1]);
+  const local = layoutMap && layoutMap.get(k.code);
+  const s = (local && local.trim() ? local : k.us).toUpperCase();
+  return [s, s];
+}
+
+// ---- Keypad geometry (mm, from the OpenSCAD model: middle-row key centre, column splay) ----
+// Columns in slot order: index, middle, ring, little finger. Slots: row * 4 + column.
+const COLS = [
+  { x: 75.0, y: 100, splay: -2 }, { x: 51.95, y: 106, splay: 0 },
+  { x: 28.9, y: 104, splay: 2 }, { x: -0.53, y: 88, splay: -2 },
+];
+const PINS = ['0', '1', '3', '4', '5', '6', '7', '8', '9', '10', 'A2', 'A3'];
+const PIN_NUM = [0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 20, 21];  // A2/A3 are digital pins 20/21
+const ROW_PITCH = 17.2, CAP_W = 17.5, CAP_D = 16.5;
+const STICK = { x: 108, y: 60, r: 19 };  // drawn next to the keys; the real stick points sideways at the thumb
+const SLOT_UP = 12, SLOT_CLICK = 16, NUM_SLOTS = 17;
+const DEFAULT_KEYS = [0x21, 0x20, 0x1F, 0x1E, 0x15, 0x08, 0x14, 0x2B, 0x2C, 0x0A, 0x09, 0xE0, 0x1A, 0x16, 0x04, 0x07, 0xE1];
+
+// SVG space: x right, y down; model y grows towards the fingertips.
+const VB = { x0: -16, x1: 132, y0: 30, y1: 139 };
+const sx = (x) => x - VB.x0, sy = (y) => VB.y1 - y;
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+function el(name, attrs = {}, parent) {
+  const e = document.createElementNS(SVGNS, name);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.append(e);
+  return e;
+}
+
+const keyEls = [];  // per slot: { g, lbl, cap }
+function buildPad() {
+  const svg = $('pad');
+  svg.setAttribute('viewBox', `0 0 ${VB.x1 - VB.x0} ${VB.y1 - VB.y0}`);
+  // Housing: key field plate and the palm rest behind it.
+  el('rect', { x: sx(-13), y: sy(133), width: 102, height: 75, rx: 9, class: 'shell' }, svg);
+  el('path', { d: `M${sx(-8)} ${sy(58)} Q${sx(-8)} ${sy(38)} ${sx(14)} ${sy(36)} L${sx(66)} ${sy(36)} Q${sx(84)} ${sy(38)} ${sx(84)} ${sy(58)}`, class: 'palm' }, svg);
+  const palm = el('text', { x: sx(38), y: sy(44), class: 'palmtext' }, svg); palm.dataset.i18n = 'palm';
+  el('circle', { cx: sx(STICK.x), cy: sy(STICK.y), r: STICK.r + 3.5, class: 'ring' }, svg);
+  const thumb = el('text', { x: sx(STICK.x), y: sy(STICK.y - STICK.r - 7), class: 'palmtext' }, svg); thumb.dataset.i18n = 'thumb';
+
+  for (let slot = 0; slot < 12; slot++) {
+    const col = COLS[slot % 4], row = Math.floor(slot / 4);
+    const g = el('g', { class: 'key', tabindex: 0, role: 'button',
+      transform: `translate(${sx(col.x)} ${sy(col.y)}) rotate(${-col.splay}) translate(0 ${(row - 1) * ROW_PITCH})` }, svg);
+    el('rect', { x: -CAP_W / 2, y: -CAP_D / 2 + 0.9, width: CAP_W, height: CAP_D, rx: 2.6, class: 'shadow' }, g);
+    const cap = el('rect', { x: -CAP_W / 2, y: -CAP_D / 2, width: CAP_W, height: CAP_D, rx: 2.6, class: 'cap' }, g);
+    const lbl = el('text', { x: 0, y: 0.3, class: 'lbl' }, g);
+    const pin = el('text', { x: -CAP_W / 2 + 1.3, y: CAP_D / 2 - 1.3, class: 'pin' }, g); pin.textContent = PINS[slot];
+    el('path', { d: 'M4.6 -6.2 l1.2 1.3 l2.4 -2.8', class: 'check' }, g);
+    keyEls[slot] = { g, lbl, cap };
+  }
+  const fingerY = Math.max(...COLS.map((c) => c.y)) + ROW_PITCH + CAP_D / 2 + 2.5;
+  COLS.forEach((c, i) => {
+    const f = el('text', { x: sx(c.x), y: sy(fingerY), class: 'fingers' }, svg);
+    f.dataset.finger = i;
+  });
+
+  // Stick: four wedges (up, down, left, right) around the click in the middle.
+  const cx = sx(STICK.x), cy = sy(STICK.y), r0 = 7.2, r1 = STICK.r;
+  const angles = { 12: -90, 13: 90, 14: 180, 15: 0 };  // SVG angle of each direction's centre
+  for (const slot of [12, 13, 14, 15]) {
+    const a = angles[slot] * Math.PI / 180, h = Math.PI / 4 - 0.035;
+    const p = (r, d) => `${cx + r * Math.cos(a + d)} ${cy + r * Math.sin(a + d)}`;
+    const g = el('g', { class: 'key stickpart', tabindex: 0, role: 'button' }, svg);
+    const cap = el('path', { d: `M${p(r0, -h)} L${p(r1, -h)} A${r1} ${r1} 0 0 1 ${p(r1, h)} L${p(r0, h)} A${r0} ${r0} 0 0 0 ${p(r0, -h)}Z`, class: 'cap' }, g);
+    const lr = (r0 + r1) / 2 + 0.3;
+    const lbl = el('text', { x: cx + lr * Math.cos(a), y: cy + lr * Math.sin(a) + 0.3, class: 'lbl small' }, g);
+    keyEls[slot] = { g, lbl, cap };
+  }
+  const g = el('g', { class: 'key stickpart', tabindex: 0, role: 'button' }, svg);
+  const cap = el('circle', { cx, cy, r: r0 - 0.8, class: 'cap' }, g);
+  const lbl = el('text', { x: cx, y: cy + 0.3, class: 'lbl small' }, g);
+  keyEls[SLOT_CLICK] = { g, lbl, cap };
+  el('circle', { id: 'stickDot', cx, cy, r: 1.4, visibility: 'hidden' }, svg);
+
+  keyEls.forEach(({ g }, slot) => {
+    g.addEventListener('click', () => select(slot));
+    g.addEventListener('keydown', (e) => {
+      if (capturing) return;
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(slot); }
+    });
+  });
+}
+
+// ---- State ----
+let keys = [...DEFAULT_KEYS], threshold = 50;
+let selected = 0, capturing = false, category = 'letters';
+let pressed = new Array(NUM_SLOTS).fill(false);
+let testing = false, tested = new Set();
+let isKeypad = false;
+
+function slotName(slot) {
+  if (slot >= 12) return t('stickSlots')[slot - 12];
+  return `${t('fingers')[slot % 4]} · ${t('rows')[Math.floor(slot / 4)]}`;
+}
+const stickLocked = (slot) => slot >= 12 && mode !== null && mode > 0;
+
+function render() {
+  keyEls.forEach(({ g, lbl }, slot) => {
+    let text, small = false;
+    if (stickLocked(slot)) {
+      text = slot === SLOT_CLICK ? t('clickShort')[mode] : t('lockedShort')[mode];
+      g.classList.add('locked'); g.classList.remove('unbound');
+    } else {
+      text = keyLabel(keys[slot])[1];
+      small = slot >= 12 || text.length > 4;
+      g.classList.remove('locked');
+      g.classList.toggle('unbound', !keys[slot]);
+    }
+    lbl.textContent = text;
+    if (slot < 12) lbl.classList.toggle('small', small);
+    g.classList.toggle('sel', slot === selected);
+    g.classList.toggle('on', pressed[slot]);
+    g.classList.toggle('tested', testing && tested.has(slot));
+    g.setAttribute('aria-label', `${slotName(slot)}: ${keyLabel(keys[slot])[0]}`);
+    g.setAttribute('aria-pressed', slot === selected);
+  });
+  $('pad').classList.toggle('testing', testing);
+  $('pad').querySelectorAll('[data-finger]').forEach((f) => (f.textContent = t('fingers')[f.dataset.finger]));
+  renderPanel();
+  renderTest();
+}
+
+function renderPanel() {
+  const connected = port !== null && isKeypad;
+  const locked = stickLocked(selected);
+  $('panelTitle').textContent = slotName(selected);
+  $('panelPin').textContent = selected < 12 ? t('pin', PINS[selected]) : t('stickPinHint');
+  $('current').textContent = locked ? (selected === SLOT_CLICK ? t('clickShort')[mode] : t('lockedShort')[mode]) : keyLabel(keys[selected])[0];
+  const cap = $('capture');
+  if (!connected) { cap.textContent = t('needConnect'); cap.className = 'idle'; }
+  else if (locked) { cap.textContent = t(mode === 1 ? 'lockedGamepad' : 'lockedMouse'); cap.className = 'idle'; }
+  else if (capturing) { cap.textContent = t('capturing'); cap.className = ''; }
+  else { cap.textContent = t('captureIdle'); cap.className = 'idle'; }
+
+  const cats = $('cats'); cats.replaceChildren();
+  for (const c of CATS) {
+    const b = document.createElement('button');
+    b.textContent = t('cats')[c]; b.className = c === category ? 'on' : '';
+    b.onclick = () => { category = c; renderPanel(); };
+    cats.append(b);
+  }
+  const choices = $('choices'); choices.replaceChildren();
+  const disabled = !connected || locked;
+  const mk = (usage, text, title) => {
+    const b = document.createElement('button');
+    b.textContent = text; b.title = title; b.disabled = disabled;
+    if (usage === keys[selected] && !locked) b.className = 'cur';
+    b.onclick = () => assign(usage);
+    choices.append(b);
+  };
+  mk(0, t('none'), t('unbound'));
+  for (const k of KEYS.filter((k) => k.cat === category)) {
+    const [long, short] = keyLabel(k.usage);
+    mk(k.usage, short, long);
+  }
+  $('thresh').disabled = !connected || (mode !== null && mode > 0);
+  $('threshLabel').textContent = t('thresh', threshold);
+}
+
+function renderTest() {
+  $('testBtn').textContent = t(testing ? 'testStop' : 'test');
+  $('testBtn').className = testing ? 'on' : '';
+  $('testBtn').disabled = !(port && isKeypad);
+  const info = $('testInfo');
+  info.hidden = !testing;
+  if (!testing) return;
+  const missing = [...Array(12).keys()].filter((s) => !tested.has(s));
+  info.textContent = missing.length ? t('testLeft', missing.length, missing.map((s) => t('pin', PINS[s])).join(', ')) : t('testDone');
+  info.className = missing.length ? '' : 'ok';
+}
+
+function select(slot) {
+  selected = slot;
+  capturing = port !== null && isKeypad && !stickLocked(slot);
+  const k = byUsage.get(keys[slot]);
+  if (k) category = k.cat;
+  render();
+}
+
+$('capture').onclick = () => {
+  if (port && isKeypad && !stickLocked(selected)) { capturing = true; renderPanel(); }
+};
+
+// Capturing a key press from the PC keyboard. Committed after a short delay, so a press on the
+// keypad itself (which also types) is recognised from the live state and not taken as the choice,
+// and AltGr (sent by Windows as Ctrl + AltRight) ends up as AltRight.
+let pendingCapture = null;
+window.addEventListener('keydown', (e) => {
+  if (!capturing || e.repeat) return;
+  const k = byCode.get(e.code);
+  if (!k) return;
+  e.preventDefault();
+  if (pendingCapture && pendingCapture.code === 'ControlLeft' && e.code === 'AltRight') pendingCapture.usage = k.usage;
+  if (pendingCapture) return;
+  pendingCapture = { usage: k.usage, code: e.code, slot: selected, at: Date.now() };
+  setTimeout(() => {
+    const p = pendingCapture; pendingCapture = null;
+    if (p && p.slot === selected && capturing) { capturing = false; assign(p.usage); }
+  }, 260);
+}, true);
+
+async function assign(usage) {
+  if (!port || !isKeypad || stickLocked(selected)) return;
+  capturing = false;
+  keys[selected] = usage;
+  render();
+  await saveConfig();
+}
+
+let saveMsg = null;
+function setSaveState(key, cls) {
+  saveMsg = key ? [key, cls] : null;
+  $('saveState').textContent = key ? t(key) : ''; $('saveState').className = 'grow ' + (cls || '');
+}
+async function saveConfig() {
+  setSaveState('saving');
+  const reply = await command(`SET ${keys.join(' ')} ${threshold}`);
+  setSaveState(reply === 'OK' ? 'saved' : 'saveFailed', reply === 'OK' ? 'ok' : 'bad');
+}
+
+$('thresh').oninput = () => { threshold = Number($('thresh').value); $('threshLabel').textContent = t('thresh', threshold); };
+$('thresh').onchange = () => saveConfig();
+$('testBtn').onclick = () => { testing = !testing; tested.clear(); render(); };
+
+// ---- Serial connection ----
+const FILTERS = [{ usbVendorId: 0x1209 }, { usbVendorId: 0x2341 }, { usbVendorId: 0x1B4F }];
+let port = null, reader = null, writer = null, rxBuffer = '', waiting = null, busy = Promise.resolve();
+let mode = null, pollTimer = null;
+
+let statusMsg = ['notConnected', [], false];
+function setStatus(key, ok, ...args) {
+  statusMsg = [key, args, ok];
+  $('status').textContent = t(key, ...args); $('status').className = (ok ? 'ok' : 'bad') + ' grow';
+}
+
+function command(text) {
+  const run = busy.then(() => new Promise(async (resolve) => {
+    if (!writer) return resolve(null);
+    const timer = setTimeout(() => { waiting = null; resolve(null); }, 1500);
+    waiting = (line) => { clearTimeout(timer); waiting = null; resolve(line); };
+    try { await writer.write(new TextEncoder().encode(text + '\n')); }
+    catch { clearTimeout(timer); waiting = null; resolve(null); }
+  }));
+  busy = run.catch(() => {});
+  return run;
+}
+
+async function readLoop() {
+  const decoder = new TextDecoder();
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      rxBuffer += decoder.decode(value);
+      let nl;
+      while ((nl = rxBuffer.indexOf('\n')) >= 0) {
+        const line = rxBuffer.slice(0, nl).trim();
+        rxBuffer = rxBuffer.slice(nl + 1);
+        if (line && waiting) waiting(line);
+      }
+    }
+  } catch { /* unplugged or rebooting */ }
+  if (port) disconnect('connLost');
+}
+
+async function connect() {
+  if (!('serial' in navigator)) return;
+  try {
+    const known = (await navigator.serial.getPorts()).filter((p) => p.getInfo().usbVendorId === 0x1209 && p.getInfo().usbProductId === 0x0003);
+    const target = known.length === 1 ? known[0] : await navigator.serial.requestPort({ filters: FILTERS });
+    await target.open({ baudRate: 115200 });
+    await target.setSignals({ dataTerminalReady: true });
+    port = target; reader = port.readable.getReader(); writer = port.writable.getWriter(); rxBuffer = '';
+    readLoop();
+    await new Promise((r) => setTimeout(r, 300));
+    $('connect').textContent = t('disconnect');
+    const dev = await command('DEV');
+    isKeypad = dev === 'DEV JS-KEYPAD';
+    setStatus(isKeypad ? 'connected' : 'notKeypad', isKeypad);
+    await loadConfig();
+    if (isKeypad) pollTimer = setInterval(poll, 120);
+  } catch (e) {
+    await disconnect();
+    if (e.name !== 'NotFoundError') setStatus('connectFailed', false, e.message);
+  }
+}
+
+async function disconnect(key) {
+  clearInterval(pollTimer); pollTimer = null;
+  const p = port; port = null;
+  try { reader && await reader.cancel(); } catch {}
+  try { reader && reader.releaseLock(); } catch {}
+  try { writer && writer.releaseLock(); } catch {}
+  reader = writer = null;
+  try { p && await p.close(); } catch {}
+  if (waiting) waiting(null);
+  isKeypad = false; capturing = false; testing = false;
+  pressed.fill(false);
+  $('stickDot')?.setAttribute('visibility', 'hidden');
+  setStatus(key || 'notConnected', false);
+  setSaveState(null);
+  $('connect').textContent = t('connect');
+  showMode(null);
+}
+
+async function loadConfig() {
+  const ver = await command('VER');
+  deviceVersion = isKeypad && ver && ver.startsWith('VER ') ? ver.slice(4).trim() : null;
+  showVersions();
+  if (!isKeypad) { showMode(null); return; }
+  const cfg = (await command('GET') || '').split(' ');
+  if (cfg[0] === 'CFG' && cfg.length >= NUM_SLOTS + 2) {
+    keys = cfg.slice(1, NUM_SLOTS + 1).map(Number);
+    threshold = Number(cfg[NUM_SLOTS + 1]); $('thresh').value = threshold;
+  }
+  const rot = await command('ROT');
+  if (rot && rot.startsWith('ROT ')) { $('rot').value = rot.slice(4); updateRotLabel(); }
+  const spd = await command('SPD');
+  if (spd && spd.startsWith('SPD ')) $('speed').value = spd.slice(4);
+  const m = await command('MODE');
+  showMode(m && m.startsWith('MODE ') ? Number(m.slice(5)) : null);
+  select(selected);
+}
+
+function showMode(m) {
+  mode = m;
+  const connected = port !== null && isKeypad;
+  for (const i of [0, 1, 2]) {
+    const b = $('mode' + i);
+    b.disabled = !connected || m === i || m === null;
+    b.className = 'grow' + (m === i ? ' primary' : '');
+  }
+  $('speedBox').hidden = m !== 2;
+  $('speed').disabled = !connected || m !== 2;
+  $('speedLabel').textContent = t('speed', $('speed').value);
+  $('cal').disabled = $('rot').disabled = $('rotReset').disabled = !connected;
+  $('diagBtn').disabled = !connected;
+  $('defaults').disabled = $('backup').disabled = $('restore').disabled = !connected;
+  $('fwUpdate').disabled = port === null;
+  if (port === null) deviceVersion = null;
+  showVersions();
+  $('steamCard').hidden = !(connected && m === 1);
+  $('modeLabel').textContent = !connected ? '–'
+    : t('modeNow', t(m === 1 ? 'modeGamepad' : m === 2 ? 'modeMouse' : m === 0 ? 'modeKeyboard' : 'modeUnknown'));
+  render();
+}
+
+async function poll() {
+  const s = await command('STATE');
+  const p = (s || '').split(' ');
+  if (p[0] !== 'STATE' || p.length < 7) return;
+  const calibrating = p[5] === '1';
+  const x = Number(p[3]) / 32767, y = Number(p[4]) / 32767;
+  $('dot').style.left = (53 + x * 50) + 'px';
+  $('dot').style.top = (53 - y * 50) + 'px';
+  const dot = $('stickDot');
+  if (dot) { dot.setAttribute('visibility', Math.hypot(x, y) > 0.08 ? 'visible' : 'hidden'); dot.setAttribute('cx', sx(STICK.x) + x * (STICK.r - 2)); dot.setAttribute('cy', sy(STICK.y) - y * (STICK.r - 2)); }
+  $('live').className = calibrating ? 'cal' : '';
+  $('live').textContent = calibrating ? t('calRunning') : t('live', p[1], p[2], Math.round(x * 100), Math.round(y * 100));
+  $('cal').textContent = t(calibrating ? 'calDone' : 'cal');
+
+  const bits = p[6];
+  let changed = false, newlyPressed = -1;
+  for (let i = 0; i < NUM_SLOTS; i++) {
+    const on = bits[i] === '1';
+    if (on !== pressed[i]) {
+      changed = true;
+      if (on && i < 12) newlyPressed = i;
+    }
+    pressed[i] = on;
+    if (on && testing && i < 12) tested.add(i);
+  }
+  // Pressing a key on the keypad selects it (and cancels a capture its own keystroke started).
+  if (newlyPressed >= 0 && !testing) {
+    pendingCapture = null;
+    select(newlyPressed);
+  } else if (changed) render();
+}
+
+$('connect').onclick = () => (port ? disconnect() : connect());
+$('cal').onclick = () => command('CAL');
+for (const i of [0, 1, 2]) {
+  $('mode' + i).onclick = async () => { await command('MODE ' + i); await disconnect('rebooting'); };
+}
+$('speed').oninput = () => ($('speedLabel').textContent = t('speed', $('speed').value));
+$('speed').onchange = () => command('SPD ' + $('speed').value);
+function updateRotLabel() { $('rotLabel').textContent = t('rot', Number($('rot').value)); }
+$('rot').oninput = updateRotLabel;
+$('rot').onchange = () => command('ROT ' + $('rot').value);
+$('rotReset').onclick = () => { $('rot').value = 0; updateRotLabel(); command('ROT 0'); };
+
+$('defaults').onclick = async () => {
+  if (!confirm(t('defaultsConfirm'))) return;
+  await command('RESETKEYS');
+  await loadConfig();
+  setSaveState('restored', 'ok');
+};
+
+// [label, BTN number]; Steam lets you skip every other button.
+const STEAM = [['A', 1], ['B', 2], ['X', 3], ['Stick ←', 17], ['Stick →', 18], ['Stick ↑', 19], ['Stick ↓', 20]];
+STEAM.forEach(([name, number]) => {
+  const b = document.createElement('button'); b.textContent = name;
+  b.onclick = () => command('BTN ' + number);
+  $('steampad').append(b);
+});
+
+// ---- Backup / restore ----
+$('backup').onclick = async () => {
+  const rot = await command('ROT');
+  const spd = await command('SPD');
+  const data = {
+    jsKeypad: 1, version: deviceVersion, keys, threshold,
+    rotation: rot && rot.startsWith('ROT ') ? Number(rot.slice(4)) : 0,
+    mouseSpeed: spd && spd.startsWith('SPD ') ? Number(spd.slice(4)) : 8, mode,
+  };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+  a.download = 'js-keypad-einstellungen.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  setSaveState('backupDone', 'ok');
+};
+$('restore').onclick = () => $('restoreFile').click();
+$('restoreFile').onchange = async (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  let data;
+  try { data = JSON.parse(await file.text()); } catch { return setSaveState('restoreFailed', 'bad'); }
+  if (!data || data.jsKeypad !== 1 || !Array.isArray(data.keys) || data.keys.length !== NUM_SLOTS) {
+    return setSaveState('restoreFailed', 'bad');
+  }
+  await command(`SET ${data.keys.join(' ')} ${data.threshold}`);
+  if (Number.isFinite(data.rotation)) await command('ROT ' + data.rotation);
+  if (Number.isFinite(data.mouseSpeed)) await command('SPD ' + data.mouseSpeed);
+  await loadConfig();
+  setSaveState('restoreDone', 'ok');
+};
+
+// ---- Firmware version ----
+let deviceVersion = null, latestVersion = null;
+fetch('firmware-version.txt', { cache: 'no-store' })
+  .then((r) => (r.ok ? r.text() : null))
+  .then((v) => { latestVersion = v && v.trim(); showVersions(); })
+  .catch(() => {});
+
+function showVersions() {
+  const box = $('fwVersions');
+  if (!port) { box.textContent = ''; box.className = 'hint'; return; }
+  if (!deviceVersion) { box.textContent = t('verUnknown'); box.className = 'hint bad'; return; }
+  const same = latestVersion && deviceVersion === latestVersion;
+  box.textContent = t('verLine', deviceVersion, latestVersion || '?') + (latestVersion ? t(same ? 'verCurrent' : 'verOld') : '');
+  box.className = 'hint ' + (latestVersion ? (same ? 'ok' : 'bad') : '');
+}
+
+// ---- Wiring check (firmware DIAG: raw A0, A1 + digital pins reading LOW) ----
+// Expected: VRx -> A1, VRy -> A0, SW -> pin 14 or 16, keys on PIN_NUM.
+async function sampleDiag(ms) {
+  const values = [[], []], lows = new Set();
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    const p = ((await command('DIAG')) || '').split(' ');
+    if (p[0] !== 'DIAG' || p.length < 4) {
+      if (!port) throw new Error(t('connLost'));
+      continue;
+    }
+    values[0].push(Number(p[1])); values[1].push(Number(p[2]));
+    if (p[3] !== '-') p[3].split(',').forEach((n) => lows.add(Number(n)));
+    await new Promise((r) => setTimeout(r, 30));
+  }
+  const avg = values.map((v) => v.reduce((a, b) => a + b, 0) / Math.max(1, v.length));
+  const spread = values.map((v) => Math.max(...v) - Math.min(...v));
+  return { avg, spread, lows };
+}
+
+let diagContinue = null;
+function diagAsk(text) {
+  $('diagStep').textContent = text; $('diagStep').className = 'hint active';
+  $('diagBtn').textContent = t('next'); $('diagBtn').disabled = false;
+  return new Promise((r) => (diagContinue = r));
+}
+function diagNote(cls, text) {
+  const li = document.createElement('li'); li.className = cls; li.textContent = text; $('diagResult').append(li);
+}
+
+const AXIS_PIN = ['A0', 'A1'];
+function checkDirection(rest, step, name, expected) {
+  const delta = step.avg.map((v, i) => Math.abs(v - rest.avg[i]));
+  const best = delta[0] >= delta[1] ? 0 : 1, other = 1 - expected;
+  if (delta[best] < 120) return diagNote('bad', t('dNoMove', name));
+  if (best === expected) {
+    diagNote('ok', t('dDirOk', name, AXIS_PIN[expected]));
+    if (delta[other] / delta[expected] > 0.35) diagNote('warn', t('dSkew', name));
+  } else diagNote('bad', t('dSwapped', name, AXIS_PIN[best], AXIS_PIN[expected]));
+}
+
+async function runDiag() {
+  clearInterval(pollTimer); pollTimer = null;
+  $('diagResult').replaceChildren();
+  try {
+    await diagAsk(t('diag1'));
+    $('diagBtn').disabled = true; $('diagStep').textContent = t('measuring');
+    const rest = await sampleDiag(1500);
+    await diagAsk(t('diag2'));
+    $('diagBtn').disabled = true; $('diagStep').textContent = t('diag2m');
+    const right = await sampleDiag(1500);
+    await diagAsk(t('diag3'));
+    $('diagBtn').disabled = true; $('diagStep').textContent = t('diag3m');
+    const up = await sampleDiag(1500);
+    await diagAsk(t('diag4'));
+    $('diagBtn').disabled = true; $('diagStep').textContent = t('diag4m');
+    const click = await sampleDiag(1500);
+
+    for (const [name, i] of [[t('axisX'), 1], [t('axisY'), 0]]) {
+      const a = rest.avg[i], s = rest.spread[i];
+      if (a < 40) diagNote('bad', t('dLow', name));
+      else if (a > 985) diagNote('bad', t('dHigh', name));
+      else if (s > 120) diagNote('bad', t('dNoisy', name, Math.round(s / 2)));
+      else if (a < 330 || a > 700) diagNote('warn', t('dOffCenter', name, Math.round(a)));
+      else diagNote('ok', t('dRestOk', name, Math.round(a), Math.round(s / 2)));
+    }
+    let keyStuck = false;
+    for (const pin of rest.lows) {
+      const slot = PIN_NUM.indexOf(pin);
+      if (pin === 14 || pin === 16) diagNote('bad', t('dClickStuck', pin));
+      else if (slot >= 0) { keyStuck = true; diagNote('bad', t('dKeyStuck', PINS[slot], slotName(slot))); }
+      else diagNote('warn', t('dPinGnd', pin));
+    }
+    if (!keyStuck) diagNote('ok', t('dKeysOk'));
+
+    checkDirection(rest, right, t('dirRight'), 1);
+    checkDirection(rest, up, t('dirUp'), 0);
+
+    const pressedPins = [...click.lows].filter((p) => !rest.lows.has(p));
+    if (pressedPins.includes(14) || pressedPins.includes(16)) diagNote('ok', t('dClickOk', pressedPins.includes(14) ? 14 : 16));
+    else if (pressedPins.length) diagNote('bad', t('dClickWrong', pressedPins.join(', ')));
+    else if (!rest.lows.has(14) && !rest.lows.has(16)) diagNote('bad', t('dClickNone'));
+
+    const bad = $('diagResult').querySelectorAll('.bad').length;
+    $('diagStep').textContent = bad ? t('dSummaryBad', bad) : t('dSummaryOk');
+    $('diagStep').className = 'hint active';
+  } catch (e) {
+    $('diagStep').textContent = t('dAborted', e.message);
+  }
+  diagContinue = null;
+  $('diagBtn').textContent = t('diagStart'); $('diagBtn').disabled = !port;
+  if (port && isKeypad) pollTimer = setInterval(poll, 120);
+}
+$('diagBtn').onclick = () => (diagContinue ? diagContinue() : runDiag());
+
+// ---- Firmware flashing (Caterina bootloader, AVR109 protocol – same as avrdude -c avr109) ----
+let fwMsg = null;
+function fwStatus(key, cls, ...args) {
+  fwMsg = [key, cls, ...args];
+  $('fwStatus').textContent = t(key, ...args); $('fwStatus').className = 'hint ' + (cls || '');
+}
+
+function parseHex(text) {
+  const image = new Uint8Array(32768).fill(0xFF);
+  let base = 0, end = 0;
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line.startsWith(':')) continue;
+    const bytes = line.slice(1).match(/../g).map((h) => parseInt(h, 16));
+    if ((bytes.reduce((a, b) => a + b, 0) & 0xFF) !== 0) throw new Error(t('eChecksum'));
+    const [len, hi, lo, type] = bytes;
+    const data = bytes.slice(4, 4 + len);
+    if (type === 0) {
+      const addr = base + (hi << 8 | lo);
+      image.set(data, addr);
+      end = Math.max(end, addr + len);
+    } else if (type === 2) base = (data[0] << 8 | data[1]) << 4;
+    else if (type === 4) base = (data[0] << 8 | data[1]) << 16;
+    else if (type === 1) break;
+  }
+  if (end > 28672) throw new Error(t('eTooBig'));
+  return image.slice(0, (end + 127) & ~127);  // whole 128-byte pages
+}
+
+function byteReader(serial) {
+  const r = serial.readable.getReader();
+  let buf = [];
+  let pending = null;  // keep one outstanding read so a timeout never drops bytes
+  return {
+    async read(n, ms = 2000) {
+      const deadline = Date.now() + ms;
+      while (buf.length < n) {
+        const left = deadline - Date.now();
+        if (left <= 0) throw new Error(t('eNoReply'));
+        pending = pending || r.read();
+        const res = await Promise.race([pending, new Promise((ok) => setTimeout(() => ok({ timeout: true }), left))]);
+        if (res.timeout) continue;
+        pending = null;
+        if (res.done) throw new Error(t('eAborted'));
+        buf.push(...res.value);
+      }
+      const out = buf.slice(0, n); buf = buf.slice(n); return out;
+    },
+    async release() { try { await r.cancel(); } catch {} try { r.releaseLock(); } catch {} },
+  };
+}
+
+// Step 1: opening the running sketch's port at 1200 baud makes it jump into the bootloader.
+$('fwReset').onclick = async () => {
+  if (port) await disconnect();
+  try {
+    const target = await navigator.serial.requestPort();
+    await target.open({ baudRate: 1200 });
+    await target.setSignals({ dataTerminalReady: false });
+    await target.close();
+    fwStatus('fwToBoot');
+  } catch (e) {
+    if (e.name !== 'NotFoundError') fwStatus('fwResetFailed', 'bad', e.message);
+  }
+};
+$('fwFlash').onclick = () => flashFirmware(() => navigator.serial.requestPort());
+
+// Bootloader IDs: Arduino Leonardo/Micro (2341:0036/0037), SparkFun Pro Micro (1B4F:9203/9205).
+const BOOTLOADER_IDS = [[0x2341, 0x0036], [0x2341, 0x0037], [0x1B4F, 0x9203], [0x1B4F, 0x9205]];
+const isBootloader = (p) => BOOTLOADER_IDS.some(([v, d]) => p.getInfo().usbVendorId === v && p.getInfo().usbProductId === d);
+
+$('fwUpdate').onclick = async () => {
+  const running = port;
+  if (!running) return;
+  await disconnect('fwUpdating');
+  try {
+    await running.open({ baudRate: 1200 });
+    await running.setSignals({ dataTerminalReady: false });
+    await running.close();
+  } catch (e) { return fwStatus('fwResetFailed', 'bad', e.message); }
+  fwStatus('fwBooting');
+  await flashFirmware(async () => {
+    for (let i = 0; i < 12; i++) {
+      await new Promise((r) => setTimeout(r, 250));
+      const known = (await navigator.serial.getPorts()).find(isBootloader);
+      if (known) return known;
+    }
+    fwStatus('fwPick');
+    return navigator.serial.requestPort();
+  });
+};
+
+async function flashFirmware(pickPort) {
+  if (port) await disconnect();
+  let image;
+  try {
+    image = parseHex(await (await fetch('firmware.hex', { cache: 'no-store' })).text());
+  } catch (e) { return fwStatus('fwLoadFailed', 'bad', e.message); }
+
+  let target, rd, wr;
+  try {
+    target = await pickPort();
+    await target.open({ baudRate: 57600 });
+    rd = byteReader(target); wr = target.writable.getWriter();
+    const send = (bytes) => wr.write(new Uint8Array(bytes));
+    const expectCR = async (step) => { const [b] = await rd.read(1); if (b !== 13) throw new Error(t('eRejected', t(step))); };
+
+    await send([0x53]);  // 'S' – programmer id, 7 chars ("CATERIN")
+    const id = String.fromCharCode(...await rd.read(7));
+    if (!/CATERIN|AVRBOOT|LUFA/i.test(id)) throw new Error(t('eNoBootloader', id));
+
+    $('fwProgress').hidden = false; $('fwProgress').value = 0;
+    fwStatus('fwErasing');
+    await send([0x65]); await expectCR('stepErase');  // 'e' chip erase
+
+    const PAGE = 128;
+    const total = image.length / PAGE;
+    await send([0x41, 0, 0]); await expectCR('stepAddress');  // 'A' word address 0
+    for (let p = 0; p < total; p++) {
+      const chunk = image.slice(p * PAGE, (p + 1) * PAGE);
+      await send([0x42, 0, PAGE, 0x46, ...chunk]); await expectCR('stepWrite');  // 'B' size 'F' data
+      $('fwProgress').value = (p + 1) / total / 2;
+      fwStatus('fwWriting', '', Math.round((p + 1) / total * 100));
+    }
+
+    fwStatus('fwVerifying');
+    await send([0x41, 0, 0]); await expectCR('stepAddress');
+    for (let p = 0; p < total; p++) {
+      await send([0x67, 0, PAGE, 0x46]);  // 'g' read block
+      const back = await rd.read(PAGE);
+      for (let i = 0; i < PAGE; i++) {
+        if (back[i] !== image[p * PAGE + i]) throw new Error(t('eVerify', p * PAGE + i));
+      }
+      $('fwProgress').value = 0.5 + (p + 1) / total / 2;
+    }
+
+    await send([0x45]); await expectCR('stepExit');  // 'E' leave bootloader, start firmware
+    fwStatus('fwDone', 'ok', image.length);
+  } catch (e) {
+    if (e.name === 'NotFoundError') fwStatus('fwNoDevice', 'bad');
+    else fwStatus('fwFailed', 'bad', e.message);
+  } finally {
+    try { rd && await rd.release(); } catch {}
+    try { wr && wr.releaseLock(); } catch {}
+    try { target && await target.close(); } catch {}
+  }
+}
+
+// ---- Language ----
+function applyLanguage() {
+  document.documentElement.lang = lang;
+  $('langBtn').textContent = lang === 'de' ? 'EN' : 'DE';
+  document.querySelectorAll('[data-i18n]').forEach((e) => {
+    if (e instanceof SVGElement) e.textContent = t(e.dataset.i18n); else e.innerHTML = t(e.dataset.i18n);
+  });
+  $('connect').textContent = t(port ? 'disconnect' : 'connect');
+  updateRotLabel();
+  $('cal').textContent = t('cal');
+  setStatus(statusMsg[0], statusMsg[2], ...statusMsg[1]);
+  if (saveMsg) setSaveState(...saveMsg);
+  if (fwMsg) fwStatus(...fwMsg);
+  if (diagContinue === null && !$('diagResult').children.length) $('diagStep').textContent = t('diagIntro');
+  showMode(mode);
+}
+$('langBtn').onclick = () => {
+  lang = lang === 'de' ? 'en' : 'de';
+  try { localStorage.setItem('jsKeypadLang', lang); } catch {}
+  applyLanguage();
+};
+
+buildPad();
+if (!('serial' in navigator)) {
+  $('nosupport').hidden = false; $('connect').disabled = true;
+  $('fwReset').disabled = $('fwFlash').disabled = true;
+}
+// Cache the page and the firmware, so the mapper also works without internet.
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+navigator.serial?.addEventListener('disconnect', (e) => { if (e.target === port) disconnect('unplugged'); });
+applyLanguage();
+</script>
+</body>
+</html>
