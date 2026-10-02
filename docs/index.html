@@ -781,7 +781,7 @@ window.addEventListener('keydown', (e) => {
   e.preventDefault();
   if (pendingCapture && pendingCapture.code === 'ControlLeft' && e.code === 'AltRight') pendingCapture.usage = k.usage;
   if (pendingCapture) return;
-  pendingCapture = { usage: k.usage, code: e.code, slot: selected, at: Date.now() };
+  pendingCapture = { usage: k.usage, code: e.code, slot: selected };
   setTimeout(() => {
     const p = pendingCapture; pendingCapture = null;
     if (p && p.slot === selected && capturing) { capturing = false; assign(p.usage); }
