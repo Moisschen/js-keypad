@@ -615,7 +615,7 @@ const DEFAULT_KEYS = [0x21, 0x20, 0x1F, 0x1E, 0x15, 0x08, 0x14, 0x2B, 0x2C, 0x0A
 
 // Clickable stick control, drawn on the joystick housing (the real stick points sideways, so seen from above it
 // would only be a thin disc). Kept clear of the thumb key below it.
-const STICK = { x: DEVICE.stickCentre[0] - 15, y: DEVICE.stickCentre[1] + 23, r: 15 };
+const STICK = { x: DEVICE.stickCentre[0] - 15, y: DEVICE.stickCentre[1] + 13, r: 15 };
 // SVG space: x right, y down; model y grows towards the fingertips.
 const VB = { x0: DEVICE.bounds[0] - 3, x1: Math.max(DEVICE.bounds[2], STICK.x + STICK.r + 3) + 3, y0: DEVICE.bounds[1] - 3, y1: DEVICE.bounds[3] + 9 };
 const sx = (x) => x - VB.x0, sy = (y) => VB.y1 - y;
