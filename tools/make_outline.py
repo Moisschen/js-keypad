@@ -31,9 +31,12 @@ def mat(name):
     return np.array(eval(re.search(rf"^{name}\s*=\s*(.*?);", placement, re.M).group(1)))
 
 
-def outline(mesh, tol=0.12):
+def outline(mesh, tol=0.12, glatt=0.0):
     poly = trimesh.path.polygons.projected(mesh, normal=[0, 0, 1], ignore_sign=True)
-    poly = unary_union(poly).buffer(0.05).buffer(-0.05).simplify(tol)
+    poly = unary_union(poly).buffer(0.05).buffer(-0.05)
+    if glatt:   # Zacken abschneiden (oeffnen), Kerben fuellen (schliessen) - nur fuers Bild
+        poly = poly.buffer(-glatt).buffer(glatt).buffer(glatt).buffer(-glatt)
+    poly = poly.simplify(tol)
     polys = list(poly.geoms) if isinstance(poly, MultiPolygon) else [poly]
     d = []
     for p in polys:
@@ -60,7 +63,7 @@ parts = {
     "housing": load(OUT / "_daumentaste_aufnahme.stl"),
     "shell": load(OUT / "oberschale-integrated.stl"),
 }
-shapes = {k: outline(v) for k, v in parts.items()}
+shapes = {k: outline(v, glatt=3.0 if k == "shell" else 0.0) for k, v in parts.items()}
 allb = np.vstack([m.bounds for m in parts.values()])
 
 # --- Tastenkappen (wie key_mat in main.scad) ---
