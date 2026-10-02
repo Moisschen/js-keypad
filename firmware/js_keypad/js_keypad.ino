@@ -6,7 +6,8 @@
 
 #include "joystick_core.h"
 
-// JS-Keypad: 12 keys (4 fingers x 3 rows, one pin each, no matrix) plus the thumb stick.
+// JS-Keypad: 12 finger keys (4 fingers x 3 rows) and a thumb key under the stick, one pin each
+// (no matrix), plus the thumb stick.
 // The keys always type keyboard keys. The stick has three modes: keyboard (stick types keys),
 // gamepad (generic HID, Steam can turn it into an Xbox pad) or mouse. The gamepad / mouse
 // descriptor is only registered in its mode, so in keyboard mode games see no controller.
@@ -26,7 +27,7 @@ const uint8_t ModeMouse = 2;
 const uint8_t GamepadReportId = 3;  // 1 and 2 are taken by Mouse/Keyboard
 const uint8_t MouseReportId = 4;
 const uint8_t DefaultMouseSpeed = 8;
-const char FirmwareVersion[] = "1.0";  // bump on every release; the web mapper compares it with docs/firmware-version.txt
+const char FirmwareVersion[] = "1.1";  // bump on every release; the web mapper compares it with docs/firmware-version.txt
 uint8_t mouseSpeed = DefaultMouseSpeed;  // pixels per 8 ms at full deflection
 
 static const uint8_t GamepadDescriptor[] PROGMEM = {
@@ -117,7 +118,6 @@ const boolean InvertLeftYAxis = true;  // raw high = down
 const int Pin_LeftJoyX = A1;
 const int Pin_LeftJoyY = A0;
 
-const int Pin_Calibrate = 15;
 const int Pin_CalibrationLed = 2;
 const int CalibrationEepromAddress = 0;
 const int KeyMapEepromAddress = 64;  // after Calibration (well below 64 bytes)
@@ -127,10 +127,11 @@ const int ReleaseHysteresisPercent = 15;  // release this far below the press th
 
 const unsigned long VirtualPressMillis = 100;
 
-const uint16_t KeyMapMagicNumber = 0x504B;  // 'KP'
+const uint16_t KeyMapMagicNumber = 0x504C;  // 'LP' - 1.0 had one key less
 
-// Slots 0..11 are the keys, row by row (top, home, bottom), each row index, middle, ring, pinky.
-const int NumKeys = 12;
+// Slots 0..11 are the finger keys, row by row (top, home, bottom), each row index, middle, ring,
+// pinky; slot 12 is the thumb key under the stick.
+const int NumKeys = 13;
 enum StickSlot { SlotUp = NumKeys, SlotDown, SlotLeft, SlotRight, SlotClick, NumSlots };
 
 // Each key between its pin and GND (INPUT_PULLUP). Same order as the slots.
@@ -138,6 +139,7 @@ const uint8_t KeyPins[NumKeys] = {
   0, 1, 3, 4,      // top row
   5, 6, 7, 8,      // home row
   9, 10, A2, A3,   // bottom row
+  15,              // thumb key (pin 15 was the calibration button; calibration now only runs from the mapper)
 };
 const unsigned long KeyLockoutMillis = 8;  // ignore contact bounce right after a change
 
@@ -151,6 +153,7 @@ const KeyMap DefaultKeyMap = { KeyMapMagicNumber, {
   0x21, 0x20, 0x1F, 0x1E,  // 4 3 2 1
   0x15, 0x08, 0x14, 0x2B,  // R E Q Tab
   0x2C, 0x0A, 0x09, 0xE0,  // Space G F Ctrl
+  0x06,                    // thumb key: C
   0x1A, 0x16, 0x04, 0x07,  // stick W S A D
   0xE1,                    // stick click: Shift
 }, 50 };
@@ -287,7 +290,6 @@ void setup() {
   for (int key = 0; key < NumKeys; key++) {
     pinMode(KeyPins[key], INPUT_PULLUP);
   }
-  pinMode(Pin_Calibrate, INPUT_PULLUP);
   pinMode(Pin_CalibrationLed, OUTPUT);
   digitalWrite(Pin_CalibrationLed, LOW);
 
@@ -303,15 +305,6 @@ void setup() {
 
   Serial.begin(115200);
   Keyboard.begin();
-}
-
-static void blinkResetFeedback() {
-  for (int blink = 0; blink < 3; blink++) {
-    digitalWrite(Pin_CalibrationLed, HIGH);
-    delay(120);
-    digitalWrite(Pin_CalibrationLed, LOW);
-    delay(120);
-  }
 }
 
 static boolean isTimeForNextTick(unsigned long& nextTickMicros) {
@@ -351,7 +344,7 @@ static Inputs readInputs() {
   }
   // Calibration is only started from the mapper (CAL), so the stick click can be held in games.
   boolean virtualPress = serialCalibrationPulse(inputs.nowMillis);
-  inputs.calibrationButtonRaw = digitalRead(Pin_Calibrate) && !virtualPress;
+  inputs.calibrationButtonRaw = !virtualPress;  // HIGH = released
   return inputs;
 }
 
@@ -561,12 +554,12 @@ static void applyOutputs(const Outputs& outputs, const State& state, const Input
 }
 
 // ---- Serial protocol (one command per line) ----
-// Slots: 0..11 keys (top/home/bottom row, each index, middle, ring, pinky),
-//        12..16 stick up, down, left, right, click. Codes are HID usage IDs, 0 = unbound.
-//   GET                          -> CFG <17 codes> <threshold>
-//   SET <17 codes> <threshold>   -> OK | ERR   (saved to EEPROM)
+// Slots: 0..11 finger keys (top/home/bottom row, each index, middle, ring, pinky), 12 thumb key,
+//        13..17 stick up, down, left, right, click. Codes are HID usage IDs, 0 = unbound.
+//   GET                          -> CFG <18 codes> <threshold>
+//   SET <18 codes> <threshold>   -> OK | ERR   (saved to EEPROM)
 //   RESETKEYS                    -> CFG ...    (defaults, saved)
-//   STATE                        -> STATE <rawX> <rawY> <x> <y> <calibrating> <17 chars 0/1, one per slot>
+//   STATE                        -> STATE <rawX> <rawY> <x> <y> <calibrating> <18 chars 0/1, one per slot>
 //   CAL                          -> OK          (toggles calibration)
 //   MODE                         -> MODE <0 keyboard | 1 gamepad | 2 mouse>
 //   MODE <0|1|2>                 -> OK          (board reboots on change)
@@ -730,7 +723,7 @@ static void handleCommand(char* line) {
 }
 
 static void pollSerial() {
-  static char line[96];  // SET with 17 codes is up to ~76 characters
+  static char line[96];  // SET with 18 codes is up to ~80 characters
   static int length = 0;
 
   while (Serial.available() > 0) {
@@ -754,15 +747,9 @@ void loop() {
   static unsigned long nextTickMicros = 0;
 
   if (!initialized) {
-    boolean calibrationHeldAtBoot = (digitalRead(Pin_Calibrate) == LOW);
     Calibration storedCalibration;
     EEPROM.get(CalibrationEepromAddress, storedCalibration);
-    Calibration initialCalibration = resolveInitialCalibration(storedCalibration, calibrationHeldAtBoot);
-    if (calibrationHeldAtBoot) {
-      EEPROM.put(CalibrationEepromAddress, initialCalibration);
-      blinkResetFeedback();
-    }
-    state = makeInitialState(initialCalibration, calibrationHeldAtBoot);
+    state = makeInitialState(resolveInitialCalibration(storedCalibration, false), false);
     nextTickMicros = micros();
     initialized = true;
   }

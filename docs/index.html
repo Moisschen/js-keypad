@@ -317,6 +317,7 @@ const STR = {
     hKeys: 'Tastenbelegung',
     fingers: ['Zeigefinger', 'Mittelfinger', 'Ringfinger', 'Kleiner Finger'],
     rows: ['obere Reihe', 'mittlere Reihe', 'untere Reihe'],
+    thumbKey: 'Daumentaste (unter dem Stick)',
     stickSlots: ['Stick hoch', 'Stick runter', 'Stick links', 'Stick rechts', 'Stick-Klick'],
     pin: (p) => `Pin ${p}`, stickPinHint: 'Daumen-Stick',
     palm: 'Handballen', thumb: 'Daumen',
@@ -334,11 +335,11 @@ const STR = {
     restored: 'Standardbelegung wiederhergestellt',
     thresh: (v) => `Stick-Auslösepunkt: ${v} % Stickweg`,
     defaults: 'Standardbelegung', backup: 'Einstellungen sichern', restore: 'Sicherung laden',
-    defaultsConfirm: 'Alle 17 Belegungen auf den Standard zurücksetzen?',
+    defaultsConfirm: 'Alle 18 Belegungen auf den Standard zurücksetzen?',
     backupDone: 'Einstellungen als Datei gespeichert', restoreDone: 'Sicherung übernommen',
     restoreFailed: 'Datei passt nicht zum JS-Keypad',
     test: 'Tastentest', testStop: 'Test beenden',
-    testLeft: (n, list) => `Noch ${n} offen: ${list}`, testDone: 'Alle 12 Tasten kommen an ✓',
+    testLeft: (n, list) => `Noch ${n} offen: ${list}`, testDone: 'Alle 13 Tasten kommen an ✓',
     keyNames: {
       Enter: ['Enter', 'Enter'], Escape: ['Esc', 'Esc'], Backspace: ['Rücktaste', '⌫'], Tab: ['Tab', 'Tab'],
       Space: ['Leertaste', 'Leer'], CapsLock: ['Feststelltaste', 'Caps'], PrintScreen: ['Druck', 'Druck'],
@@ -352,7 +353,7 @@ const STR = {
       NumpadAdd: ['Ziffernblock +', 'Num +'], NumpadEnter: ['Ziffernblock Enter', 'Num ⏎'], NumpadDecimal: ['Ziffernblock ,', 'Num ,'],
       Numpad: (d) => [`Ziffernblock ${d}`, `Num ${d}`],
     },
-    hMode: 'Stick-Modus', modeHint: 'Die 12 Tasten sind immer Tastatur-Tasten, der Modus gilt nur für den Stick. Ohne PC umschalten: beim Einstecken Stick halten (hoch = Tastatur, rechts = Controller, runter = Maus) oder kurz klicken, das schaltet reihum weiter. Beim Umschalten startet das Keypad neu – danach einmal neu verbinden.',
+    hMode: 'Stick-Modus', modeHint: 'Die 13 Tasten sind immer Tastatur-Tasten, der Modus gilt nur für den Stick. Ohne PC umschalten: beim Einstecken Stick halten (hoch = Tastatur, rechts = Controller, runter = Maus) oder kurz klicken, das schaltet reihum weiter. Beim Umschalten startet das Keypad neu – danach einmal neu verbinden.',
     modeGamepad: 'Controller', modeKeyboard: 'Tastatur', modeMouse: 'Maus', modeUnknown: 'unbekannt',
     modeNow: (m) => `Aktiver Modus: ${m}`,
     speed: (v) => `Mausgeschwindigkeit: ${v} von 20`,
@@ -435,6 +436,7 @@ const STR = {
     hKeys: 'Key mapping',
     fingers: ['Index finger', 'Middle finger', 'Ring finger', 'Little finger'],
     rows: ['top row', 'home row', 'bottom row'],
+    thumbKey: 'Thumb key (under the stick)',
     stickSlots: ['Stick up', 'Stick down', 'Stick left', 'Stick right', 'Stick click'],
     pin: (p) => `Pin ${p}`, stickPinHint: 'Thumb stick',
     palm: 'Palm', thumb: 'Thumb',
@@ -452,11 +454,11 @@ const STR = {
     restored: 'Default mapping restored',
     thresh: (v) => `Stick trigger point: ${v} % travel`,
     defaults: 'Default mapping', backup: 'Back up settings', restore: 'Load backup',
-    defaultsConfirm: 'Reset all 17 mappings to the defaults?',
+    defaultsConfirm: 'Reset all 18 mappings to the defaults?',
     backupDone: 'Settings saved to a file', restoreDone: 'Backup applied',
     restoreFailed: 'That file does not match the JS-Keypad',
     test: 'Key test', testStop: 'End test',
-    testLeft: (n, list) => `${n} left: ${list}`, testDone: 'All 12 keys arrive ✓',
+    testLeft: (n, list) => `${n} left: ${list}`, testDone: 'All 13 keys arrive ✓',
     keyNames: {
       Enter: ['Enter', 'Enter'], Escape: ['Esc', 'Esc'], Backspace: ['Backspace', '⌫'], Tab: ['Tab', 'Tab'],
       Space: ['Space', 'Space'], CapsLock: ['Caps Lock', 'Caps'], PrintScreen: ['Print Screen', 'PrtSc'],
@@ -470,7 +472,7 @@ const STR = {
       NumpadAdd: ['Numpad +', 'Num +'], NumpadEnter: ['Numpad Enter', 'Num ⏎'], NumpadDecimal: ['Numpad .', 'Num .'],
       Numpad: (d) => [`Numpad ${d}`, `Num ${d}`],
     },
-    hMode: 'Stick mode', modeHint: 'The 12 keys are always keyboard keys; the mode only affects the stick. Switch without a PC: while plugging in hold the stick (up = keyboard, right = controller, down = mouse) or tap the click to cycle through the modes. Switching restarts the keypad – reconnect afterwards.',
+    hMode: 'Stick mode', modeHint: 'The 13 keys are always keyboard keys; the mode only affects the stick. Switch without a PC: while plugging in hold the stick (up = keyboard, right = controller, down = mouse) or tap the click to cycle through the modes. Switching restarts the keypad – reconnect afterwards.',
     modeGamepad: 'Controller', modeKeyboard: 'Keyboard', modeMouse: 'Mouse', modeUnknown: 'unknown',
     modeNow: (m) => `Active mode: ${m}`,
     speed: (v) => `Mouse speed: ${v} of 20`,
@@ -604,15 +606,17 @@ const COLS = [
   { x: 75.0, y: 100, splay: -2 }, { x: 51.95, y: 106, splay: 0 },
   { x: 28.9, y: 104, splay: 2 }, { x: -0.53, y: 88, splay: -2 },
 ];
-const PINS = ['0', '1', '3', '4', '5', '6', '7', '8', '9', '10', 'A2', 'A3'];
-const PIN_NUM = [0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 20, 21];  // A2/A3 are digital pins 20/21
+const PINS = ['0', '1', '3', '4', '5', '6', '7', '8', '9', '10', 'A2', 'A3', '15'];
+const PIN_NUM = [0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 20, 21, 15];  // A2/A3 are digital pins 20/21
 const ROW_PITCH = 17.2, CAP_W = 17.5, CAP_D = 16.5;
 const STICK = { x: 108, y: 60, r: 19 };  // drawn next to the keys; the real stick points sideways at the thumb
-const SLOT_UP = 12, SLOT_CLICK = 16, NUM_SLOTS = 17;
-const DEFAULT_KEYS = [0x21, 0x20, 0x1F, 0x1E, 0x15, 0x08, 0x14, 0x2B, 0x2C, 0x0A, 0x09, 0xE0, 0x1A, 0x16, 0x04, 0x07, 0xE1];
+const THUMB_KEY = { x: 108, y: 27 };       // thumb key, below the stick
+// Slots 0..11 finger keys, 12 thumb key under the stick, 13..17 stick up/down/left/right/click.
+const NUM_KEYS = 13, THUMB = 12, SLOT_UP = 13, SLOT_CLICK = 17, NUM_SLOTS = 18;
+const DEFAULT_KEYS = [0x21, 0x20, 0x1F, 0x1E, 0x15, 0x08, 0x14, 0x2B, 0x2C, 0x0A, 0x09, 0xE0, 0x06, 0x1A, 0x16, 0x04, 0x07, 0xE1];
 
 // SVG space: x right, y down; model y grows towards the fingertips.
-const VB = { x0: -16, x1: 132, y0: 30, y1: 139 };
+const VB = { x0: -16, x1: 132, y0: 8, y1: 139 };
 const sx = (x) => x - VB.x0, sy = (y) => VB.y1 - y;
 
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -632,19 +636,22 @@ function buildPad() {
   el('path', { d: `M${sx(-8)} ${sy(58)} Q${sx(-8)} ${sy(38)} ${sx(14)} ${sy(36)} L${sx(66)} ${sy(36)} Q${sx(84)} ${sy(38)} ${sx(84)} ${sy(58)}`, class: 'palm' }, svg);
   const palm = el('text', { x: sx(38), y: sy(44), class: 'palmtext' }, svg); palm.dataset.i18n = 'palm';
   el('circle', { cx: sx(STICK.x), cy: sy(STICK.y), r: STICK.r + 3.5, class: 'ring' }, svg);
-  const thumb = el('text', { x: sx(STICK.x), y: sy(STICK.y - STICK.r - 7), class: 'palmtext' }, svg); thumb.dataset.i18n = 'thumb';
+  const thumb = el('text', { x: sx(STICK.x), y: sy(THUMB_KEY.y - CAP_D / 2 - 4.5), class: 'palmtext' }, svg); thumb.dataset.i18n = 'thumb';
 
-  for (let slot = 0; slot < 12; slot++) {
-    const col = COLS[slot % 4], row = Math.floor(slot / 4);
-    const g = el('g', { class: 'key', tabindex: 0, role: 'button',
-      transform: `translate(${sx(col.x)} ${sy(col.y)}) rotate(${-col.splay}) translate(0 ${(row - 1) * ROW_PITCH})` }, svg);
+  const keyCap = (slot, transform) => {
+    const g = el('g', { class: 'key', tabindex: 0, role: 'button', transform }, svg);
     el('rect', { x: -CAP_W / 2, y: -CAP_D / 2 + 0.9, width: CAP_W, height: CAP_D, rx: 2.6, class: 'shadow' }, g);
     const cap = el('rect', { x: -CAP_W / 2, y: -CAP_D / 2, width: CAP_W, height: CAP_D, rx: 2.6, class: 'cap' }, g);
     const lbl = el('text', { x: 0, y: 0.3, class: 'lbl' }, g);
     const pin = el('text', { x: -CAP_W / 2 + 1.3, y: CAP_D / 2 - 1.3, class: 'pin' }, g); pin.textContent = PINS[slot];
     el('path', { d: 'M4.6 -6.2 l1.2 1.3 l2.4 -2.8', class: 'check' }, g);
     keyEls[slot] = { g, lbl, cap };
+  };
+  for (let slot = 0; slot < 12; slot++) {
+    const col = COLS[slot % 4], row = Math.floor(slot / 4);
+    keyCap(slot, `translate(${sx(col.x)} ${sy(col.y)}) rotate(${-col.splay}) translate(0 ${(row - 1) * ROW_PITCH})`);
   }
+  keyCap(THUMB, `translate(${sx(THUMB_KEY.x)} ${sy(THUMB_KEY.y)})`);
   const fingerY = Math.max(...COLS.map((c) => c.y)) + ROW_PITCH + CAP_D / 2 + 2.5;
   COLS.forEach((c, i) => {
     const f = el('text', { x: sx(c.x), y: sy(fingerY), class: 'fingers' }, svg);
@@ -653,8 +660,8 @@ function buildPad() {
 
   // Stick: four wedges (up, down, left, right) around the click in the middle.
   const cx = sx(STICK.x), cy = sy(STICK.y), r0 = 7.2, r1 = STICK.r;
-  const angles = { 12: -90, 13: 90, 14: 180, 15: 0 };  // SVG angle of each direction's centre
-  for (const slot of [12, 13, 14, 15]) {
+  const angles = { 13: -90, 14: 90, 15: 180, 16: 0 };  // SVG angle of each direction's centre
+  for (const slot of [13, 14, 15, 16]) {
     const a = angles[slot] * Math.PI / 180, h = Math.PI / 4 - 0.035;
     const p = (r, d) => `${cx + r * Math.cos(a + d)} ${cy + r * Math.sin(a + d)}`;
     const g = el('g', { class: 'key stickpart', tabindex: 0, role: 'button' }, svg);
@@ -686,10 +693,11 @@ let testing = false, tested = new Set();
 let isKeypad = false;
 
 function slotName(slot) {
-  if (slot >= 12) return t('stickSlots')[slot - 12];
+  if (slot === THUMB) return t('thumbKey');
+  if (slot >= SLOT_UP) return t('stickSlots')[slot - SLOT_UP];
   return `${t('fingers')[slot % 4]} · ${t('rows')[Math.floor(slot / 4)]}`;
 }
-const stickLocked = (slot) => slot >= 12 && mode !== null && mode > 0;
+const stickLocked = (slot) => slot >= SLOT_UP && mode !== null && mode > 0;
 
 function render() {
   keyEls.forEach(({ g, lbl }, slot) => {
@@ -699,12 +707,12 @@ function render() {
       g.classList.add('locked'); g.classList.remove('unbound');
     } else {
       text = keyLabel(keys[slot])[1];
-      small = slot >= 12 || text.length > 4;
+      small = slot >= SLOT_UP || text.length > 4;
       g.classList.remove('locked');
       g.classList.toggle('unbound', !keys[slot]);
     }
     lbl.textContent = text;
-    if (slot < 12) lbl.classList.toggle('small', small);
+    if (slot < SLOT_UP) lbl.classList.toggle('small', small);
     g.classList.toggle('sel', slot === selected);
     g.classList.toggle('on', pressed[slot]);
     g.classList.toggle('tested', testing && tested.has(slot));
@@ -721,7 +729,7 @@ function renderPanel() {
   const connected = port !== null && isKeypad;
   const locked = stickLocked(selected);
   $('panelTitle').textContent = slotName(selected);
-  $('panelPin').textContent = selected < 12 ? t('pin', PINS[selected]) : t('stickPinHint');
+  $('panelPin').textContent = selected < SLOT_UP ? t('pin', PINS[selected]) : t('stickPinHint');
   $('current').textContent = locked ? (selected === SLOT_CLICK ? t('clickShort')[mode] : t('lockedShort')[mode]) : keyLabel(keys[selected])[0];
   const cap = $('capture');
   if (!connected) { cap.textContent = t('needConnect'); cap.className = 'idle'; }
@@ -761,7 +769,7 @@ function renderTest() {
   const info = $('testInfo');
   info.hidden = !testing;
   if (!testing) return;
-  const missing = [...Array(12).keys()].filter((s) => !tested.has(s));
+  const missing = [...Array(NUM_KEYS).keys()].filter((s) => !tested.has(s));
   info.textContent = missing.length ? t('testLeft', missing.length, missing.map((s) => t('pin', PINS[s])).join(', ')) : t('testDone');
   info.className = missing.length ? '' : 'ok';
 }
@@ -962,10 +970,10 @@ async function poll() {
     const on = bits[i] === '1';
     if (on !== pressed[i]) {
       changed = true;
-      if (on && i < 12) newlyPressed = i;
+      if (on && i < NUM_KEYS) newlyPressed = i;
     }
     pressed[i] = on;
-    if (on && testing && i < 12) tested.add(i);
+    if (on && testing && i < NUM_KEYS) tested.add(i);
   }
   // Pressing a key on the keypad selects it (and cancels a capture its own keystroke started).
   if (newlyPressed >= 0 && !testing) {

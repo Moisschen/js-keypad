@@ -1,6 +1,6 @@
 # JS-Keypad
 
-12-Tasten-Keypad (4 Finger × 3 Reihen) mit Daumen-Stick für die linke Hand – Firmware für den
+13-Tasten-Keypad (4 Finger × 3 Reihen + Daumentaste unter dem Stick) mit Daumen-Stick für die linke Hand – Firmware für den
 Pro Micro und ein Web-Mapper, in dem man auf ein Abbild des Keypads klickt und die Taste belegt.
 
 **Mapper:** https://moisschen.github.io/js-keypad/ (Chrome oder Edge, Web Serial)
@@ -27,8 +27,9 @@ Jede Taste zwischen Pin und GND, keine Dioden/Matrix (`INPUT_PULLUP`):
 | Mitte  | 5     | 6      | 7    | 8     |
 | unten  | 9     | 10     | A2   | A3    |
 
-Stick: VRx → A1, VRy → A0, SW → 14 (oder 16), dazu VCC und GND. Pin 15 = Kalibrier-Taster (optional),
-Pin 2 = LED (optional).
+Daumentaste (unter dem Stick): Pin 15.
+
+Stick: VRx → A1, VRy → A0, SW → 14 (oder 16), dazu VCC und GND. Pin 2 = LED (optional).
 Auf der Platine heißt Pin 0 **RXI** und Pin 1 **TXO**. Der Plan wird mit `python tools/make_wiring.py` erzeugt.
 
 ## Rettung

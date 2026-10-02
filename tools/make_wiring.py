@@ -16,7 +16,7 @@ TEXT = {
         'gndKeys': 'GND-Sammelleitung zu allen Tasten',
         'stick': 'Daumen-Stick',
         'vcc': 'VCC (+5 V)', 'gnd': 'GND', 'sw': 'SW (Klick)',
-        'led': 'LED (optional, mit Vorwiderstand)', 'cal': 'Kalibrier-Taster (optional)',
+        'led': 'LED (optional, mit Vorwiderstand)', 'thumbKey': 'Daumentaste',
         'alt': 'alternativ für SW', 'free': 'frei',
         'note1': 'Jede Taste: ein Bein an ihren Pin, das andere an GND (⏚). Alle ⏚ sind dieselbe Leitung –',
         'note2': 'einfach ein Draht von Taste zu Taste und weiter an einen GND-Pin. Keine Dioden nötig.',
@@ -29,7 +29,7 @@ TEXT = {
         'gndKeys': 'GND line to all keys',
         'stick': 'Thumb stick',
         'vcc': 'VCC (+5 V)', 'gnd': 'GND', 'sw': 'SW (click)',
-        'led': 'LED (optional, with resistor)', 'cal': 'Calibrate button (optional)',
+        'led': 'LED (optional, with resistor)', 'thumbKey': 'Thumb key',
         'alt': 'alternative for SW', 'free': 'free',
         'note1': 'Each key: one leg to its pin, the other to GND (⏚). All ⏚ are the same line –',
         'note2': 'just run one wire from key to key and on to a GND pin. No diodes needed.',
@@ -43,7 +43,7 @@ RIGHT = [('RAW', None), ('GND', None), ('RST', None), ('VCC', None), ('A3', 'A3'
          ('A1', 'A1'), ('A0', 'A0'), ('15', '15'), ('14', '14'), ('16', '16'), ('10', '10')]
 
 # Key slots: row * 4 + column (column 0 = index ... 3 = little finger), same as the firmware.
-KEY_PINS = ['0', '1', '3', '4', '5', '6', '7', '8', '9', '10', 'A2', 'A3']
+KEY_PINS = ['0', '1', '3', '4', '5', '6', '7', '8', '9', '10', 'A2', 'A3', '15']  # 12 = thumb key
 
 W, H = 1000, 640
 TOP, PITCH = 128, 34
@@ -59,6 +59,9 @@ def esc(s):
 def mini_keypad(x, y, slot):
     """4x3 key icon, little finger on the left; the given slot is filled."""
     out = []
+    # thumb key: small key below the grid, right (stick side)
+    cls = 'mk on' if slot == 12 else 'mk'
+    out.append(f'<rect x="{x + 41}" y="{y + 17}" width="6.5" height="6.5" rx="1.3" class="{cls}"/>')
     for row in range(3):
         for col in range(4):
             vis_col = 3 - col  # draw little finger left
@@ -125,7 +128,7 @@ def build(lang):
 
     def key_entry(side, y, slot, pin_label):
         row, col = divmod(slot, 4)
-        name = f'{T["fingers"][col]} · {T["rows"][row]}'
+        name = T['thumbKey'] if slot == 12 else f'{T["fingers"][col]} · {T["rows"][row]}'
         if side == 'L':
             o.append(f'<path d="M{PX_L} {y} H{318}" class="wk"/>')
             o.append(button(278, 318, y))
@@ -182,8 +185,6 @@ def build(lang):
             o.append(f'<text x="{STICK_X0 - 8}" y="{y - 6}" class="small b" text-anchor="end">{esc(label)}</text>')
         elif pin in KEY_PINS:
             key_entry('R', y, KEY_PINS.index(pin), f'Pin {pin}')
-        elif pin == '15':
-            text_entry('R', y, T['cal'], 'wo', 610, 'm small')
         elif pin == '16':
             text_entry('R', y, T['alt'], 'wo', 610, 'm small')
         else:
