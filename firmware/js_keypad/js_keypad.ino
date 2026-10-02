@@ -21,13 +21,17 @@ const int RotationEepromAddress = 98;  // int8 degrees, -90..90 (0xFF from a fre
 const int RotationMagicEepromAddress = 99;
 const uint8_t RotationMagic = 0xA5;
 const int MouseSpeedEepromAddress = 100;  // uint8 1..20, 0xFF from a fresh EEPROM falls back to the default
+const int StickEnabledEepromAddress = 101;  // 0 = no stick connected (A0/A1 floating, ignored), anything else = on
+const int PinMapMagicEepromAddress = 103;   // PinMapMagic when a learned pin map follows
+const int PinMapEepromAddress = 104;        // NumKeys bytes: Arduino pin of each key slot
+const uint8_t PinMapMagic = 0x5A;
 const uint8_t ModeKeyboard = 0;
 const uint8_t ModeGamepad = 1;
 const uint8_t ModeMouse = 2;
 const uint8_t GamepadReportId = 3;  // 1 and 2 are taken by Mouse/Keyboard
 const uint8_t MouseReportId = 4;
 const uint8_t DefaultMouseSpeed = 8;
-const char FirmwareVersion[] = "1.1";  // bump on every release; the web mapper compares it with docs/firmware-version.txt
+const char FirmwareVersion[] = "1.2";  // bump on every release; the web mapper compares it with docs/firmware-version.txt
 uint8_t mouseSpeed = DefaultMouseSpeed;  // pixels per 8 ms at full deflection
 
 static const uint8_t GamepadDescriptor[] PROGMEM = {
@@ -134,13 +138,19 @@ const uint16_t KeyMapMagicNumber = 0x504C;  // 'LP' - 1.0 had one key less
 const int NumKeys = 13;
 enum StickSlot { SlotUp = NumKeys, SlotDown, SlotLeft, SlotRight, SlotClick, NumSlots };
 
-// Each key between its pin and GND (INPUT_PULLUP). Same order as the slots.
-const uint8_t KeyPins[NumKeys] = {
+// Each key between its pin and GND (INPUT_PULLUP). Same order as the slots. This is the default wiring; the
+// mapper can learn the real one (PINS command), so a keypad wired in any order still works.
+const uint8_t DefaultKeyPins[NumKeys] = {
   0, 1, 3, 4,      // top row
   5, 6, 7, 8,      // home row
   9, 10, A2, A3,   // bottom row
   15,              // thumb key (pin 15 was the calibration button; calibration now only runs from the mapper)
 };
+uint8_t keyPins[NumKeys];
+// Pins a key may use: digital inputs that are free (not 2 = LED, not A0/A1 = stick axes). 14/16 are the stick
+// click pins - allowed, but then that pin is both.
+const uint8_t KeyPinChoices[] = { 0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 14, 15, 16, A2, A3 };
+boolean stickEnabled = true;
 const unsigned long KeyLockoutMillis = 8;  // ignore contact bounce right after a change
 
 struct KeyMap {
@@ -207,6 +217,23 @@ boolean serialCalibrationPressPending = false;
 static boolean isValidKeyMap(const KeyMap& candidate) {
   return candidate.magicNumber == KeyMapMagicNumber
          && candidate.thresholdPercent >= 20 && candidate.thresholdPercent <= 95;
+}
+
+static boolean isKeyPinChoice(uint8_t pin) {
+  for (uint8_t i = 0; i < sizeof(KeyPinChoices); i++) {
+    if (KeyPinChoices[i] == pin) return true;
+  }
+  return false;
+}
+
+// Learned pin map from EEPROM, or the default wiring if none (or an invalid one) is stored.
+static void loadPinMap() {
+  boolean valid = EEPROM.read(PinMapMagicEepromAddress) == PinMapMagic;
+  for (int key = 0; key < NumKeys && valid; key++) {
+    keyPins[key] = EEPROM.read(PinMapEepromAddress + key);
+    valid = isKeyPinChoice(keyPins[key]);
+  }
+  if (!valid) memcpy(keyPins, DefaultKeyPins, NumKeys);
 }
 
 // HID usage -> Keyboard.h code: modifiers are 128..135, other raw usages are offset by 136.
@@ -287,9 +314,11 @@ void setup() {
   for (uint8_t i = 0; i < sizeof(DiagPins); i++) {
     pinMode(DiagPins[i], INPUT_PULLUP);  // defined level, so the wiring check can spot a button on any pin
   }
+  loadPinMap();
   for (int key = 0; key < NumKeys; key++) {
-    pinMode(KeyPins[key], INPUT_PULLUP);
+    pinMode(keyPins[key], INPUT_PULLUP);
   }
+  stickEnabled = EEPROM.read(StickEnabledEepromAddress) != 0;
   pinMode(Pin_CalibrationLed, OUTPUT);
   digitalWrite(Pin_CalibrationLed, LOW);
 
@@ -373,7 +402,7 @@ static void releaseAllSlots() {
 // Press acts at once; a change within KeyLockoutMillis of the last one is contact bounce.
 static void updateKeys(unsigned long now) {
   for (int key = 0; key < NumKeys; key++) {
-    boolean raw = digitalRead(KeyPins[key]) == LOW;
+    boolean raw = digitalRead(keyPins[key]) == LOW;
     if (raw != keyStable[key] && now - keyChangeMillis[key] >= KeyLockoutMillis) {
       keyStable[key] = raw;
       keyChangeMillis[key] = now;
@@ -525,6 +554,7 @@ static int clampAxis(float value) {
 static void applyOutputs(const Outputs& outputs, const State& state, const Inputs& inputs) {
   int rawX = InvertLeftXAxis ? -outputs.joystickX : outputs.joystickX;
   int rawY = InvertLeftYAxis ? -outputs.joystickY : outputs.joystickY;  // positive = up
+  if (!stickEnabled) rawX = rawY = 0;  // nothing connected: floating A0/A1 would type random directions
   int x = clampAxis(rawX * rotationCos + rawY * rotationSin);
   int y = clampAxis(rawY * rotationCos - rawX * rotationSin);
 
@@ -563,6 +593,11 @@ static void applyOutputs(const Outputs& outputs, const State& state, const Input
 //   CAL                          -> OK          (toggles calibration)
 //   MODE                         -> MODE <0 keyboard | 1 gamepad | 2 mouse>
 //   MODE <0|1|2>                 -> OK          (board reboots on change)
+//   PINS                         -> PINS <13 pins>   (Arduino pin of each key slot)
+//   PINS <13 pins>               -> OK | ERR      (learned wiring, saved; pins from KeyPinChoices, no duplicates)
+//   RESETPINS                    -> PINS ...      (default wiring, saved)
+//   STICK                        -> STICK <0|1>
+//   STICK <0|1>                  -> OK            (0 = no stick connected, its inputs are ignored; saved)
 //   VER                          -> VER <firmware version>
 //   DEV                          -> DEV JS-KEYPAD
 //   SPD                          -> SPD <1..20>
@@ -653,11 +688,62 @@ static void printDiag() {
   Serial.println();
 }
 
+static void printPins() {
+  Serial.print(F("PINS"));
+  for (int key = 0; key < NumKeys; key++) {
+    Serial.print(' ');
+    Serial.print(keyPins[key]);
+  }
+  Serial.println();
+}
+
+static void applyPins(const uint8_t* pins, boolean save) {
+  releaseAllSlots();
+  for (int key = 0; key < NumKeys; key++) {
+    keyPins[key] = pins[key];
+    pinMode(keyPins[key], INPUT_PULLUP);
+    keyStable[key] = false;
+    if (save) EEPROM.update(PinMapEepromAddress + key, keyPins[key]);
+  }
+  if (save) EEPROM.update(PinMapMagicEepromAddress, PinMapMagic);
+}
+
+static void handlePinsCommand(char* arguments) {
+  uint8_t pins[NumKeys];
+  for (int key = 0; key < NumKeys; key++) {
+    char* token = strtok(key == 0 ? arguments : NULL, " ");
+    if (token == NULL) { Serial.println(F("ERR")); return; }
+    long pin = atol(token);
+    if (pin < 0 || pin > 255 || !isKeyPinChoice((uint8_t)pin)) { Serial.println(F("ERR")); return; }
+    for (int other = 0; other < key; other++) {
+      if (pins[other] == pin) { Serial.println(F("ERR")); return; }
+    }
+    pins[key] = (uint8_t)pin;
+  }
+  applyPins(pins, true);
+  Serial.println(F("OK"));
+}
+
 static void handleCommand(char* line) {
   if (strcmp(line, "GET") == 0) {
     printKeyMap();
   } else if (strncmp(line, "SET ", 4) == 0) {
     handleSetCommand(line + 4);
+  } else if (strcmp(line, "PINS") == 0) {
+    printPins();
+  } else if (strncmp(line, "PINS ", 5) == 0) {
+    handlePinsCommand(line + 5);
+  } else if (strcmp(line, "RESETPINS") == 0) {
+    applyPins(DefaultKeyPins, true);
+    EEPROM.update(PinMapMagicEepromAddress, 0);
+    printPins();
+  } else if (strcmp(line, "STICK") == 0) {
+    Serial.print(F("STICK "));
+    Serial.println(stickEnabled ? 1 : 0);
+  } else if (strcmp(line, "STICK 0") == 0 || strcmp(line, "STICK 1") == 0) {
+    stickEnabled = line[6] == '1';
+    EEPROM.update(StickEnabledEepromAddress, stickEnabled ? 1 : 0);
+    Serial.println(F("OK"));
   } else if (strcmp(line, "RESETKEYS") == 0) {
     saveKeyMap(DefaultKeyMap);
     printKeyMap();

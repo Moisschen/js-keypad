@@ -90,6 +90,8 @@
   #saveState { font-size: 13px; color: var(--muted); }
   #saveState.ok { color: var(--ok); } #saveState.bad { color: var(--bad); }
   #testInfo { font-size: 13px; color: var(--warn); }
+  .learn { margin: 6px 0 10px; padding: 10px 12px; border: 1px dashed var(--accent); border-radius: 8px; }
+  #learnText { font-weight: 600; color: var(--accent); }
   #testInfo.ok { color: var(--ok); }
 
   .stickbox { width: 120px; height: 120px; border: 1px solid var(--line); border-radius: 50%; position: relative; flex: none; }
@@ -146,7 +148,16 @@
     <div class="row" style="margin-bottom:6px">
       <h2 class="grow" style="margin:0" data-i18n="hKeys"></h2>
       <span id="testInfo" hidden></span>
+      <button id="learnBtn" data-i18n="learn"></button>
       <button id="testBtn" data-i18n="test"></button>
+    </div>
+    <div id="learnBox" class="learn" hidden>
+      <div id="learnText"></div>
+      <p class="hint" style="margin:4px 0 0" data-i18n="learnHint"></p>
+      <div class="row" style="margin-top:8px">
+        <button id="learnSkip" data-i18n="learnSkip"></button>
+        <button id="learnCancel" data-i18n="learnCancel"></button>
+      </div>
     </div>
     <svg id="pad" viewBox="0 0 10 10" role="group"></svg>
 
@@ -204,6 +215,10 @@
         </div>
       </div>
       <p class="hint" data-i18n="calHint"></p>
+      <label class="row" style="margin-top:12px; gap:8px; cursor:pointer">
+        <input type="checkbox" id="stickOn" checked disabled> <span data-i18n="stickOn"></span>
+      </label>
+      <p class="hint" style="margin-top:4px" data-i18n="stickOnHint"></p>
       <div style="margin-top:12px">
         <label for="rot" id="rotLabel"></label>
         <div class="row">
@@ -341,6 +356,13 @@ const STR = {
     backupDone: 'Einstellungen als Datei gespeichert', restoreDone: 'Sicherung übernommen',
     restoreFailed: 'Datei passt nicht zum JS-Keypad',
     test: 'Tastentest', testStop: 'Test beenden',
+    learn: 'Verdrahtung anlernen', learnSkip: 'Überspringen', learnCancel: 'Abbrechen',
+    learnStep: (n, total, name) => `Taste ${n} von ${total}: jetzt „${name}“ am Keypad drücken (im Bild markiert).`,
+    learnDup: (pin, name) => `Pin ${pin} ist schon „${name}“ zugeordnet – die markierte Taste drücken oder „Überspringen“.`,
+    learnHint: 'Nicht angeschlossene Tasten (z. B. die Daumentaste) mit „Überspringen“ auslassen. Ein Klick auf eine Taste im Bild springt zu ihr.',
+    learnDone: 'Verdrahtung gespeichert – jede Taste ist jetzt ihrem Pin zugeordnet.', learnFailed: 'Speichern der Verdrahtung fehlgeschlagen',
+    learnOld: 'Braucht Firmware 1.2 oder neuer – unten „Firmware aktualisieren“.',
+    stickOn: 'Stick angeschlossen', stickOnHint: 'Ohne Stick den Haken entfernen – sonst lösen die offenen Eingänge zufällig Richtungstasten aus.',
     testLeft: (n, list) => `Noch ${n} offen: ${list}`, testDone: 'Alle 13 Tasten kommen an ✓',
     keyNames: {
       Enter: ['Enter', 'Enter'], Escape: ['Esc', 'Esc'], Backspace: ['Rücktaste', '⌫'], Tab: ['Tab', 'Tab'],
@@ -460,6 +482,13 @@ const STR = {
     backupDone: 'Settings saved to a file', restoreDone: 'Backup applied',
     restoreFailed: 'That file does not match the JS-Keypad',
     test: 'Key test', testStop: 'End test',
+    learn: 'Learn wiring', learnSkip: 'Skip', learnCancel: 'Cancel',
+    learnStep: (n, total, name) => `Key ${n} of ${total}: press “${name}” on the keypad now (marked in the picture).`,
+    learnDup: (pin, name) => `Pin ${pin} is already assigned to “${name}” – press the marked key or “Skip”.`,
+    learnHint: 'Skip keys that are not wired (e.g. the thumb key). Clicking a key in the picture jumps to it.',
+    learnDone: 'Wiring saved – every key is now assigned to its pin.', learnFailed: 'Saving the wiring failed',
+    learnOld: 'Needs firmware 1.2 or newer – click “Update firmware” below.',
+    stickOn: 'Stick connected', stickOnHint: 'Untick without a stick – otherwise the open inputs randomly trigger direction keys.',
     testLeft: (n, list) => `${n} left: ${list}`, testDone: 'All 13 keys arrive ✓',
     keyNames: {
       Enter: ['Enter', 'Enter'], Escape: ['Esc', 'Esc'], Backspace: ['Backspace', '⌫'], Tab: ['Tab', 'Tab'],
@@ -608,7 +637,10 @@ function keyLabel(usage) {
 const DEVICE = {"bounds":[-21.0,-44.4,136.2,143.2],"parts":{"wrist":"M-14.8 8.5 L-14.5 7.0 L-13.8 5.4 L-13.0 4.1 L-11.8 2.8 L-10.7 1.9 L-9.1 1.0 L-6.2 0.1 L3.6 -0.0 L77.9 -0.0 L77.7 -23.9 L77.2 -28.4 L76.0 -32.4 L75.1 -34.2 L73.9 -35.8 L72.4 -37.2 L70.6 -38.5 L66.3 -40.4 L61.4 -41.7 L56.2 -42.8 L46.7 -43.8 L39.3 -44.2 L31.6 -44.4 L24.0 -44.1 L16.9 -43.6 L10.5 -42.7 L4.9 -41.6 L0.3 -40.3 L-3.8 -38.6 L-7.5 -36.5 L-9.1 -35.2 L-10.5 -33.7 L-11.7 -32.0 L-12.6 -30.1 L-13.3 -28.0 L-14.2 -23.3 L-14.6 -18.0 Z","body":"M-15.0 17.2 L-15.0 54.0 L-14.8 54.0 L-13.8 58.0 L-12.8 60.1 L-8.9 65.8 L-8.0 67.4 L-7.2 70.3 L-7.2 72.8 L-8.0 77.6 L-13.1 95.8 L-16.0 104.4 L-16.9 106.5 L-19.5 111.7 L-20.5 114.3 L-21.0 116.9 L-20.1 119.6 L-18.1 121.3 L-15.1 122.6 L-1.1 126.4 L1.6 128.0 L4.2 130.7 L9.2 137.1 L11.9 139.6 L15.3 140.8 L31.6 141.4 L33.2 141.6 L37.6 143.0 L39.5 143.2 L55.9 143.2 L58.0 142.6 L59.4 141.4 L61.2 138.8 L62.2 137.9 L63.8 137.4 L78.0 137.0 L81.6 136.4 L84.6 135.1 L86.3 132.9 L87.1 130.5 L87.4 127.7 L87.4 122.2 L88.1 114.5 L87.6 86.2 L86.5 77.4 L86.2 70.9 L85.8 67.8 L84.8 64.6 L83.0 62.5 L77.9 42.0 L77.9 0.0 L65.4 -0.0 L66.7 -6.1 L66.5 -6.8 L65.9 -7.0 L58.9 -7.0 L58.3 -6.7 L58.2 -6.0 L59.6 -0.0 L34.4 -0.0 L35.8 -6.1 L35.5 -6.8 L35.0 -7.0 L27.9 -7.0 L27.4 -6.7 L27.2 -6.0 L28.6 -0.0 L3.4 0.0 L4.8 -6.1 L4.5 -6.8 L4.0 -7.0 L-3.2 -7.0 L-3.6 -6.7 L-3.8 -6.1 L-2.4 0.0 L-6.7 0.3 L-8.2 0.7 L-9.8 1.4 L-11.2 2.4 L-12.5 3.6 L-14.4 6.6 L-14.8 7.9 Z","palm":"M-20.6 33.6 L-20.5 38.4 L-20.0 41.9 L-19.2 44.6 L-17.8 47.1 L-16.3 48.8 L-14.3 50.2 L-11.7 51.3 L-7.8 52.3 L-1.6 53.2 L5.5 53.5 L58.1 53.6 L67.8 53.2 L71.4 52.8 L74.1 52.1 L77.4 50.7 L78.7 49.8 L79.8 48.7 L81.5 46.0 L82.5 42.2 L83.1 36.2 L83.3 12.5 L83.1 7.6 L82.4 3.7 L81.6 1.5 L80.6 -0.3 L79.1 -1.9 L77.5 -3.1 L75.4 -4.0 L72.1 -4.9 L68.3 -5.5 L64.2 -5.9 L55.5 -6.3 L42.0 -6.4 L28.5 -6.3 L16.1 -5.9 L8.3 -5.5 L1.8 -4.9 L-3.7 -4.0 L-8.7 -2.7 L-12.9 -1.1 L-14.6 -0.2 L-15.9 0.8 L-17.2 2.0 L-18.2 3.4 L-19.6 6.3 L-20.2 9.0 L-20.6 12.7 Z","housing":"M73.5 2.3 L73.5 50.9 L75.9 50.9 L77.9 53.1 L81.1 53.2 L90.8 53.0 L94.1 52.9 L98.3 52.3 L102.6 51.2 L103.7 50.4 L104.6 49.0 L105.1 47.1 L105.2 44.9 L105.0 42.4 L104.5 39.7 L102.6 33.7 L118.9 35.6 L120.4 35.5 L133.9 29.4 L135.1 28.4 L135.9 27.1 L136.2 25.6 L135.8 24.1 L130.3 12.3 L129.4 11.0 L128.1 10.2 L126.5 10.0 L89.0 13.8 L77.9 0.1 L75.9 2.3 Z","shell":"M-20.8 115.4 L-20.5 119.0 L-18.7 121.1 L-16.0 122.5 L-13.2 123.3 L-11.9 123.3 L-9.1 124.4 L-7.8 124.4 L-5.0 125.5 L-3.6 125.5 L-0.8 126.6 L2.2 128.9 L8.7 136.9 L11.0 139.2 L14.3 140.6 L31.8 141.2 L37.4 143.1 L57.2 143.1 L59.1 142.3 L60.9 140.2 L61.0 139.6 L63.3 137.6 L67.3 137.1 L79.2 137.1 L83.6 135.9 L84.7 135.4 L86.2 133.9 L87.1 131.7 L87.3 121.1 L87.9 118.2 L87.3 83.2 L86.2 77.1 L86.2 70.3 L85.2 64.5 L83.4 62.2 L81.2 61.4 L77.9 60.8 L61.1 61.6 L59.3 62.9 L58.4 66.0 L56.3 67.7 L48.0 68.2 L40.8 68.0 L37.4 65.8 L29.9 65.8 L29.4 65.5 L27.9 65.8 L26.1 65.2 L20.9 64.7 L18.1 63.2 L17.4 62.5 L19.1 56.5 L17.9 55.3 L14.6 54.2 L12.4 53.7 L5.4 53.7 L-1.1 53.1 L-3.6 53.7 L-4.0 54.4 L-5.1 67.4 L-7.1 77.4 L-8.1 80.2 L-8.2 81.3 L-9.2 84.1 L-11.5 92.8 L-12.5 95.3 L-12.6 96.4 L-15.6 104.2 L-20.0 112.4 Z"},"keys":[[[62.66,108.22],[79.98,107.61],[78.72,119.06],[61.4,119.67]],[[39.56,113.92],[56.88,113.92],[55.23,125.38],[37.9,125.38]],[[16.46,111.61],[33.78,112.22],[31.73,123.67],[14.41,123.06]],[[-9.28,93.88],[7.48,98.32],[2.95,109.41],[-13.81,104.97]],[[62.35,91.23],[79.67,90.62],[80.0,107.02],[62.68,107.63]],[[39.84,96.92],[57.17,96.92],[56.93,113.33],[39.6,113.33]],[[17.33,94.62],[34.65,95.23],[33.84,111.63],[16.52,111.02]],[[-4.73,77.43],[12.04,81.87],[7.67,97.75],[-9.09,93.31]],[[60.55,76.92],[77.87,76.31],[79.63,89.98],[62.31,90.59]],[[38.53,82.6],[55.86,82.6],[57.14,96.28],[39.81,96.28]],[[16.52,80.31],[33.84,80.92],[34.65,94.59],[17.33,93.98]],[[-2.44,63.59],[14.33,68.03],[12.17,81.26],[-4.59,76.82]],[[111.93,18.34],[126.89,11.39],[134.27,27.26],[119.31,34.21]]],"stick":"M109.0 17.6 L109.7 17.4 L110.5 17.5 L111.3 17.8 L112.2 18.3 L113.2 19.0 L114.1 20.0 L115.0 21.1 L115.9 22.4 L116.7 23.8 L117.5 25.2 L118.1 26.7 L118.6 28.3 L119.0 29.8 L119.3 31.2 L119.4 32.5 L119.4 33.7 L119.2 34.7 L118.9 35.6 L118.5 36.2 L117.9 36.6 L117.2 36.8 L116.4 36.7 L115.6 36.4 L114.7 35.9 L113.7 35.1 L112.8 34.2 L111.9 33.1 L111.0 31.8 L110.2 30.4 L109.4 29.0 L108.8 27.5 L108.3 25.9 L107.9 24.4 L107.6 23.0 L107.5 21.7 L107.5 20.5 L107.7 19.5 L108.0 18.6 L108.4 18.0 Z","stickCentre":[113.5,27.1]};
 // </DEVICE>
 const PINS = ['0', '1', '3', '4', '5', '6', '7', '8', '9', '10', 'A2', 'A3', '15'];
-const PIN_NUM = [0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 20, 21, 15];  // A2/A3 are digital pins 20/21
+const PIN_NUM = [0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 20, 21, 15];  // default wiring; A2/A3 are digital pins 20/21
+const PIN_CHOICES = [0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 14, 15, 16, 20, 21];  // pins a key may use (firmware KeyPinChoices)
+const pinName = (p) => (p === 20 ? 'A2' : p === 21 ? 'A3' : String(p));
+let pinMap = [...PIN_NUM], hasPinMap = false;  // learned wiring (firmware 1.2+)
 // Slots 0..11 finger keys, 12 thumb key under the stick, 13..17 stick up/down/left/right/click.
 const NUM_KEYS = 13, THUMB = 12, SLOT_UP = 13, SLOT_CLICK = 17, NUM_SLOTS = 18;
 const DEFAULT_KEYS = [0x21, 0x20, 0x1F, 0x1E, 0x15, 0x08, 0x14, 0x2B, 0x2C, 0x0A, 0x09, 0xE0, 0x06, 0x1A, 0x16, 0x04, 0x07, 0xE1];
@@ -648,10 +680,9 @@ function buildPad() {
     const lbl = el('text', { x: c[0], y: c[1] + 0.3, class: 'lbl' }, g);
     const [px, py] = toward(q[0], 0.72);
     const pin = el('text', { x: px, y: py, class: 'pin', 'text-anchor': 'middle', 'dominant-baseline': 'central' }, g);
-    pin.textContent = PINS[slot];
     const [kx, ky] = toward(q[2], 0.62);
     el('path', { d: `M${kx - 1.8} ${ky} l1.2 1.3 l2.4 -2.8`, class: 'check' }, g);
-    keyEls[slot] = { g, lbl, cap };
+    keyEls[slot] = { g, lbl, cap, pin };
     return { c, q };
   };
   const top = [];
@@ -704,7 +735,8 @@ function slotName(slot) {
 const stickLocked = (slot) => slot >= SLOT_UP && mode !== null && mode > 0;
 
 function render() {
-  keyEls.forEach(({ g, lbl }, slot) => {
+  keyEls.forEach(({ g, lbl, pin }, slot) => {
+    if (pin) pin.textContent = pinName(pinMap[slot]);
     let text, small = false;
     if (stickLocked(slot)) {
       text = slot === SLOT_CLICK ? t('clickShort')[mode] : t('lockedShort')[mode];
@@ -727,13 +759,14 @@ function render() {
   $('pad').querySelectorAll('[data-finger]').forEach((f) => (f.textContent = t('fingers')[f.dataset.finger]));
   renderPanel();
   renderTest();
+  renderLearn();
 }
 
 function renderPanel() {
   const connected = port !== null && isKeypad;
   const locked = stickLocked(selected);
   $('panelTitle').textContent = slotName(selected);
-  $('panelPin').textContent = selected < SLOT_UP ? t('pin', PINS[selected]) : t('stickPinHint');
+  $('panelPin').textContent = selected < SLOT_UP ? t('pin', pinName(pinMap[selected])) : t('stickPinHint');
   $('current').textContent = locked ? (selected === SLOT_CLICK ? t('clickShort')[mode] : t('lockedShort')[mode]) : keyLabel(keys[selected])[0];
   const cap = $('capture');
   if (!connected) { cap.textContent = t('needConnect'); cap.className = 'idle'; }
@@ -774,11 +807,15 @@ function renderTest() {
   info.hidden = !testing;
   if (!testing) return;
   const missing = [...Array(NUM_KEYS).keys()].filter((s) => !tested.has(s));
-  info.textContent = missing.length ? t('testLeft', missing.length, missing.map((s) => t('pin', PINS[s])).join(', ')) : t('testDone');
+  info.textContent = missing.length ? t('testLeft', missing.length, missing.map((s) => t('pin', pinName(pinMap[s]))).join(', ')) : t('testDone');
   info.className = missing.length ? '' : 'ok';
 }
 
 function select(slot) {
+  if (learn) {   // during learning a click jumps to that key
+    if (slot < NUM_KEYS) { learn.slot = slot; learn.note = ''; learn.waitRelease = false; selected = slot; render(); renderLearn(); }
+    return;
+  }
   selected = slot;
   capturing = port !== null && isKeypad && !stickLocked(slot);
   const k = byUsage.get(keys[slot]);
@@ -903,7 +940,7 @@ async function disconnect(key) {
   reader = writer = null;
   try { p && await p.close(); } catch {}
   if (waiting) waiting(null);
-  isKeypad = false; capturing = false; testing = false;
+  isKeypad = false; capturing = false; testing = false; learn = null;
   pressed.fill(false);
   $('stickDot')?.setAttribute('visibility', 'hidden');
   setStatus(key || 'notConnected', false);
@@ -922,6 +959,12 @@ async function loadConfig() {
     keys = cfg.slice(1, NUM_SLOTS + 1).map(Number);
     threshold = Number(cfg[NUM_SLOTS + 1]); $('thresh').value = threshold;
   }
+  const pm = await command('PINS');
+  hasPinMap = !!pm && pm.startsWith('PINS ');
+  if (hasPinMap) pinMap = pm.slice(5).trim().split(' ').map(Number);
+  const st = await command('STICK');
+  $('stickOn').disabled = !(st && st.startsWith('STICK '));
+  $('stickOn').checked = st !== 'STICK 0';
   const rot = await command('ROT');
   if (rot && rot.startsWith('ROT ')) { $('rot').value = rot.slice(4); updateRotLabel(); }
   const spd = await command('SPD');
@@ -1013,12 +1056,81 @@ STEAM.forEach(([name, number]) => {
   $('steampad').append(b);
 });
 
+// ---- Learn wiring: the mapper marks a key, the user presses it, DIAG tells which pin went LOW ----
+let learn = null;  // { slot, assigned[], baseline: Set of pins already LOW, waitRelease, note }
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function readLows() {
+  const p = ((await command('DIAG')) || '').split(' ');
+  if (p[0] !== 'DIAG' || p.length < 4) return null;
+  return new Set(p[3] === '-' ? [] : p[3].split(',').map(Number));
+}
+function renderLearn() {
+  $('learnBox').hidden = !learn;
+  $('learnBtn').disabled = !(port && isKeypad) || !!learn || testing;
+  $('learnBtn').title = port && isKeypad && !hasPinMap ? t('learnOld') : '';
+  if (learn) $('learnText').textContent = t('learnStep', learn.slot + 1, NUM_KEYS, slotName(learn.slot)) + (learn.note ? ' ' + learn.note : '');
+}
+async function startLearn() {
+  if (!port || !isKeypad) return;
+  if (!hasPinMap) return setSaveState('learnOld', 'bad');
+  clearInterval(pollTimer); pollTimer = null;
+  testing = false; capturing = false;
+  const baseline = (await readLows()) || new Set();
+  learn = { slot: 0, assigned: new Array(NUM_KEYS).fill(null), baseline, waitRelease: false, note: '' };
+  selected = 0; render(); renderLearn();
+  while (learn && port) {
+    const lows = await readLows();
+    if (lows && learn) {
+      const fresh = [...lows].filter((p) => !learn.baseline.has(p));
+      if (learn.waitRelease) {
+        if (!fresh.length) learn.waitRelease = false;   // next key only after the last one was let go
+      } else if (fresh.length === 1) {
+        const pin = fresh[0], other = learn.assigned.indexOf(pin);
+        learn.waitRelease = true;
+        if (other >= 0 && other !== learn.slot) { learn.note = t('learnDup', pinName(pin), slotName(other)); renderLearn(); }
+        else { learn.assigned[learn.slot] = pin; learn.note = ''; await nextLearn(); }
+      }
+    }
+    await sleep(40);
+  }
+}
+async function nextLearn() {
+  learn.slot++;
+  if (learn.slot >= NUM_KEYS) return finishLearn();
+  selected = learn.slot; render(); renderLearn();
+}
+async function finishLearn() {
+  const assigned = learn.assigned;
+  learn = null;
+  // skipped keys keep their pin unless another key took it; then any free pin
+  const used = new Set(assigned.filter((p) => p !== null));
+  const result = assigned.map((p, i) => {
+    if (p !== null) return p;
+    const keep = used.has(pinMap[i]) ? PIN_CHOICES.find((q) => !used.has(q)) : pinMap[i];
+    used.add(keep);
+    return keep;
+  });
+  const reply = await command('PINS ' + result.join(' '));
+  if (reply === 'OK') { pinMap = result; setSaveState('learnDone', 'ok'); } else setSaveState('learnFailed', 'bad');
+  renderLearn(); render();
+  if (port && isKeypad) pollTimer = setInterval(poll, 120);
+}
+function cancelLearn() {
+  learn = null; renderLearn(); render();
+  if (port && isKeypad && !pollTimer) pollTimer = setInterval(poll, 120);
+}
+$('learnBtn').onclick = startLearn;
+$('learnSkip').onclick = () => { if (learn) { learn.note = ''; learn.waitRelease = false; nextLearn(); } };
+$('learnCancel').onclick = cancelLearn;
+$('stickOn').onchange = () => command('STICK ' + ($('stickOn').checked ? 1 : 0));
+
 // ---- Backup / restore ----
 $('backup').onclick = async () => {
   const rot = await command('ROT');
   const spd = await command('SPD');
   const data = {
-    jsKeypad: 1, version: deviceVersion, keys, threshold,
+    jsKeypad: 1, version: deviceVersion, keys, threshold, pins: hasPinMap ? pinMap : undefined,
+    stick: $('stickOn').disabled ? undefined : ($('stickOn').checked ? 1 : 0),
     rotation: rot && rot.startsWith('ROT ') ? Number(rot.slice(4)) : 0,
     mouseSpeed: spd && spd.startsWith('SPD ') ? Number(spd.slice(4)) : 8, mode,
   };
@@ -1042,6 +1154,8 @@ $('restoreFile').onchange = async (e) => {
   await command(`SET ${data.keys.join(' ')} ${data.threshold}`);
   if (Number.isFinite(data.rotation)) await command('ROT ' + data.rotation);
   if (Number.isFinite(data.mouseSpeed)) await command('SPD ' + data.mouseSpeed);
+  if (hasPinMap && Array.isArray(data.pins) && data.pins.length === NUM_KEYS) await command('PINS ' + data.pins.join(' '));
+  if (data.stick === 0 || data.stick === 1) await command('STICK ' + data.stick);
   await loadConfig();
   setSaveState('restoreDone', 'ok');
 };
@@ -1063,7 +1177,7 @@ function showVersions() {
 }
 
 // ---- Wiring check (firmware DIAG: raw A0, A1 + digital pins reading LOW) ----
-// Expected: VRx -> A1, VRy -> A0, SW -> pin 14 or 16, keys on PIN_NUM.
+// Expected: VRx -> A1, VRy -> A0, SW -> pin 14 or 16, keys on pinMap.
 async function sampleDiag(ms) {
   const values = [[], []], lows = new Set();
   const end = Date.now() + ms;
@@ -1130,9 +1244,9 @@ async function runDiag() {
     }
     let keyStuck = false;
     for (const pin of rest.lows) {
-      const slot = PIN_NUM.indexOf(pin);
+      const slot = pinMap.indexOf(pin);
       if (pin === 14 || pin === 16) diagNote('bad', t('dClickStuck', pin));
-      else if (slot >= 0) { keyStuck = true; diagNote('bad', t('dKeyStuck', PINS[slot], slotName(slot))); }
+      else if (slot >= 0) { keyStuck = true; diagNote('bad', t('dKeyStuck', pinName(pin), slotName(slot))); }
       else diagNote('warn', t('dPinGnd', pin));
     }
     if (!keyStuck) diagNote('ok', t('dKeysOk'));

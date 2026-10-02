@@ -13,6 +13,9 @@ Pro Micro und ein Web-Mapper, in dem man auf ein Abbild des Keypads klickt und d
   die Beschriftung im Mapper folgt dem Layout des PCs.
 - Stick als Tastatur (Standard W/A/S/D + Shift), Controller oder Maus; Kalibrierung, Stickwinkel.
 - Tastentest, Verdrahtungs-Check, Sichern/Laden der Einstellungen.
+- Verdrahtung anlernen: Tasten in beliebiger Reihenfolge an die freien Pins löten, dann im Mapper jede
+  markierte Taste einmal drücken – die Zuordnung wird auf dem Keypad gespeichert.
+- Ohne angeschlossenen Stick „Stick angeschlossen“ abhaken, sonst lösen die offenen Eingänge Richtungstasten aus.
 - Firmware direkt aus dem Browser aufspielen (auch auf einen neuen Pro Micro).
 
 ## Verdrahtung
