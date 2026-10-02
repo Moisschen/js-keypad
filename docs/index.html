@@ -813,7 +813,10 @@ function renderTest() {
 
 function select(slot) {
   if (learn) {   // during learning a click jumps to that key
-    if (slot < NUM_KEYS) { learn.slot = slot; learn.note = ''; learn.waitRelease = false; selected = slot; render(); renderLearn(); }
+    if (slot < NUM_KEYS) {
+      learn.step = LEARN_ORDER.indexOf(slot); learn.slot = slot;
+      learn.note = ''; learn.waitRelease = false; selected = slot; render(); renderLearn();
+    }
     return;
   }
   selected = slot;
@@ -1057,7 +1060,10 @@ STEAM.forEach(([name, number]) => {
 });
 
 // ---- Learn wiring: the mapper marks a key, the user presses it, DIAG tells which pin went LOW ----
-let learn = null;  // { slot, assigned[], baseline: Set of pins already LOW, waitRelease, note }
+let learn = null;  // { step, slot, assigned[], baseline: Set of pins already LOW, waitRelease, note }
+// Order as the keys appear in the picture: row by row from the top, each row left to right (little finger first),
+// then the thumb key. Slots run index -> little finger, so each row is reversed.
+const LEARN_ORDER = [3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, THUMB];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function readLows() {
   const p = ((await command('DIAG')) || '').split(' ');
@@ -1068,7 +1074,7 @@ function renderLearn() {
   $('learnBox').hidden = !learn;
   $('learnBtn').disabled = !(port && isKeypad) || !!learn || testing;
   $('learnBtn').title = port && isKeypad && !hasPinMap ? t('learnOld') : '';
-  if (learn) $('learnText').textContent = t('learnStep', learn.slot + 1, NUM_KEYS, slotName(learn.slot)) + (learn.note ? ' ' + learn.note : '');
+  if (learn) $('learnText').textContent = t('learnStep', learn.step + 1, NUM_KEYS, slotName(learn.slot)) + (learn.note ? ' ' + learn.note : '');
 }
 async function startLearn() {
   if (!port || !isKeypad) return;
@@ -1076,8 +1082,8 @@ async function startLearn() {
   clearInterval(pollTimer); pollTimer = null;
   testing = false; capturing = false;
   const baseline = (await readLows()) || new Set();
-  learn = { slot: 0, assigned: new Array(NUM_KEYS).fill(null), baseline, waitRelease: false, note: '' };
-  selected = 0; render(); renderLearn();
+  learn = { step: 0, slot: LEARN_ORDER[0], assigned: new Array(NUM_KEYS).fill(null), baseline, waitRelease: false, note: '' };
+  selected = learn.slot; render(); renderLearn();
   while (learn && port) {
     const lows = await readLows();
     if (lows && learn) {
@@ -1095,8 +1101,9 @@ async function startLearn() {
   }
 }
 async function nextLearn() {
-  learn.slot++;
-  if (learn.slot >= NUM_KEYS) return finishLearn();
+  learn.step++;
+  if (learn.step >= LEARN_ORDER.length) return finishLearn();
+  learn.slot = LEARN_ORDER[learn.step];
   selected = learn.slot; render(); renderLearn();
 }
 async function finishLearn() {
