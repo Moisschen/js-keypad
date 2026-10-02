@@ -1,0 +1,175 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 640" width="1000" height="640" font-family="Segoe UI, system-ui, -apple-system, sans-serif">
+<style>
+:root{--t:#1d2330;--m:#6b7280;--w:#2563eb;--s:#d97706;--g:#4b5563;--v:#dc2626;--o:#9ca3af;--pcb:#1e3a5f;--pcbline:#0f2440;--silk:#f1f5f9;--gold:#e6b450;--usb:#c0c6cf;--mk:#e5e7eb;--mkline:#c3c9d2;--box:#f8fafc;--boxline:#cbd5e1}
+@media (prefers-color-scheme: dark){:root{--t:#e6e8ec;--m:#9aa3b2;--w:#60a5fa;--s:#fbbf24;--g:#9ca3af;--v:#f87171;--o:#6b7280;--pcb:#1e3a5f;--pcbline:#3b5b85;--mk:#2d3340;--mkline:#4a5263;--box:#1b1f27;--boxline:#3a4250}}
+text{fill:var(--t);font-size:13px}.m{fill:var(--m)}.small{font-size:11px}.b{font-weight:600}
+.silk{fill:var(--silk);font-size:11px;font-weight:600}.title{font-size:18px;font-weight:700}
+.wk{stroke:var(--w);stroke-width:2.2;fill:none}.ws{stroke:var(--s);stroke-width:2.2;fill:none}
+.wg{stroke:var(--g);stroke-width:2.2;fill:none}.wv{stroke:var(--v);stroke-width:2.2;fill:none}
+.wo{stroke:var(--o);stroke-width:1.6;fill:none;stroke-dasharray:4 4}
+.term{fill:none;stroke:var(--t);stroke-width:1.6}.btn{stroke:var(--t);stroke-width:1.8;fill:none;stroke-linecap:round}
+.gndsym{stroke:var(--g);stroke-width:1.8;fill:none;stroke-linecap:round}
+.mk{fill:var(--mk);stroke:var(--mkline);stroke-width:.6}.mk.on{fill:var(--w);stroke:var(--w)}
+.hole{fill:var(--pcbline);stroke:var(--gold);stroke-width:2.4}
+.box{fill:var(--box);stroke:var(--boxline);stroke-width:1.2}
+</style>
+<text x="24" y="34" class="title">JS-Keypad – Verdrahtungsplan</text>
+<rect x="425" y="88" width="150" height="448" rx="8" fill="var(--pcb)" stroke="var(--pcbline)" stroke-width="2"/>
+<rect x="478.0" y="78" width="44" height="30" rx="5" fill="var(--usb)" stroke="var(--pcbline)" stroke-width="1.5"/>
+<rect x="487.0" y="84" width="26" height="6" rx="3" fill="var(--pcbline)"/>
+<rect x="476.0" y="247.0" width="48" height="48" rx="3" fill="#111827" transform="rotate(45 500.0 271.0)"/>
+<text x="500.0" y="386.4" class="silk" text-anchor="middle" font-size="15" transform="rotate(-90 500.0 386.4)">Pro Micro</text>
+<text x="500.0" y="558" class="m small" text-anchor="middle">Pro Micro · Draufsicht, USB oben</text>
+<circle cx="445" cy="128" r="7" class="hole"/>
+<text x="458" y="132" class="silk">TXO</text>
+<circle cx="445" cy="162" r="7" class="hole"/>
+<text x="458" y="166" class="silk">RXI</text>
+<circle cx="445" cy="196" r="7" class="hole"/>
+<text x="458" y="200" class="silk">GND</text>
+<circle cx="445" cy="230" r="7" class="hole"/>
+<text x="458" y="234" class="silk">GND</text>
+<circle cx="445" cy="264" r="7" class="hole"/>
+<text x="458" y="268" class="silk">2</text>
+<circle cx="445" cy="298" r="7" class="hole"/>
+<text x="458" y="302" class="silk">3</text>
+<circle cx="445" cy="332" r="7" class="hole"/>
+<text x="458" y="336" class="silk">4</text>
+<circle cx="445" cy="366" r="7" class="hole"/>
+<text x="458" y="370" class="silk">5</text>
+<circle cx="445" cy="400" r="7" class="hole"/>
+<text x="458" y="404" class="silk">6</text>
+<circle cx="445" cy="434" r="7" class="hole"/>
+<text x="458" y="438" class="silk">7</text>
+<circle cx="445" cy="468" r="7" class="hole"/>
+<text x="458" y="472" class="silk">8</text>
+<circle cx="445" cy="502" r="7" class="hole"/>
+<text x="458" y="506" class="silk">9</text>
+<circle cx="555" cy="128" r="7" class="hole"/>
+<text x="542" y="132" class="silk" text-anchor="end">RAW</text>
+<circle cx="555" cy="162" r="7" class="hole"/>
+<text x="542" y="166" class="silk" text-anchor="end">GND</text>
+<circle cx="555" cy="196" r="7" class="hole"/>
+<text x="542" y="200" class="silk" text-anchor="end">RST</text>
+<circle cx="555" cy="230" r="7" class="hole"/>
+<text x="542" y="234" class="silk" text-anchor="end">VCC</text>
+<circle cx="555" cy="264" r="7" class="hole"/>
+<text x="542" y="268" class="silk" text-anchor="end">A3</text>
+<circle cx="555" cy="298" r="7" class="hole"/>
+<text x="542" y="302" class="silk" text-anchor="end">A2</text>
+<circle cx="555" cy="332" r="7" class="hole"/>
+<text x="542" y="336" class="silk" text-anchor="end">A1</text>
+<circle cx="555" cy="366" r="7" class="hole"/>
+<text x="542" y="370" class="silk" text-anchor="end">A0</text>
+<circle cx="555" cy="400" r="7" class="hole"/>
+<text x="542" y="404" class="silk" text-anchor="end">15</text>
+<circle cx="555" cy="434" r="7" class="hole"/>
+<text x="542" y="438" class="silk" text-anchor="end">14</text>
+<circle cx="555" cy="468" r="7" class="hole"/>
+<text x="542" y="472" class="silk" text-anchor="end">16</text>
+<circle cx="555" cy="502" r="7" class="hole"/>
+<text x="542" y="506" class="silk" text-anchor="end">10</text>
+<path d="M445 128 H318" class="wk"/>
+<circle cx="282" cy="128" r="2.6" class="term"/><circle cx="314" cy="128" r="2.6" class="term"/><path d="M282 125 L312 118" class="btn"/><path d="M298.0 121 v-8 M292.0 113 h12" class="btn"/>
+<path d="M278 128 H262" class="wg"/><path d="M262 128 v6 M255 134 h14 M257.5 137.5 h9 M260 141 h4" class="gndsym"/>
+<rect x="54" y="117" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="117" width="8.5" height="6.5" rx="1.3" class="mk on"/><rect x="34" y="117" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="117" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="54" y="125" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="125" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="125" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="125" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="54" y="133" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="133" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="133" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="133" width="8.5" height="6.5" rx="1.3" class="mk"/>
+<text x="72" y="132" class="b">Mittel · oben</text>
+<text x="415" y="122" class="m small" text-anchor="end">Pin 1</text>
+<path d="M445 162 H318" class="wk"/>
+<circle cx="282" cy="162" r="2.6" class="term"/><circle cx="314" cy="162" r="2.6" class="term"/><path d="M282 159 L312 152" class="btn"/><path d="M298.0 155 v-8 M292.0 147 h12" class="btn"/>
+<path d="M278 162 H262" class="wg"/><path d="M262 162 v6 M255 168 h14 M257.5 171.5 h9 M260 175 h4" class="gndsym"/>
+<rect x="54" y="151" width="8.5" height="6.5" rx="1.3" class="mk on"/><rect x="44" y="151" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="151" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="151" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="54" y="159" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="159" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="159" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="159" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="54" y="167" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="167" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="167" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="167" width="8.5" height="6.5" rx="1.3" class="mk"/>
+<text x="72" y="166" class="b">Zeige · oben</text>
+<text x="415" y="156" class="m small" text-anchor="end">Pin 0</text>
+<path d="M445 196 H262" class="wg"/><path d="M262 196 v6 M255 202 h14 M257.5 205.5 h9 M260 209 h4" class="gndsym"/>
+<text x="240" y="200" class="b" text-anchor="end">GND-Sammelleitung zu allen Tasten</text>
+<text x="415" y="234" class="m small" text-anchor="end">frei</text>
+<path d="M445 264 H330" class="wo"/>
+<text x="322" y="268" class="m" text-anchor="end">LED (optional, mit Vorwiderstand)</text>
+<path d="M445 298 H318" class="wk"/>
+<circle cx="282" cy="298" r="2.6" class="term"/><circle cx="314" cy="298" r="2.6" class="term"/><path d="M282 295 L312 288" class="btn"/><path d="M298.0 291 v-8 M292.0 283 h12" class="btn"/>
+<path d="M278 298 H262" class="wg"/><path d="M262 298 v6 M255 304 h14 M257.5 307.5 h9 M260 311 h4" class="gndsym"/>
+<rect x="54" y="287" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="287" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="287" width="8.5" height="6.5" rx="1.3" class="mk on"/><rect x="24" y="287" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="54" y="295" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="295" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="295" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="295" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="54" y="303" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="303" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="303" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="303" width="8.5" height="6.5" rx="1.3" class="mk"/>
+<text x="72" y="302" class="b">Ring · oben</text>
+<text x="415" y="292" class="m small" text-anchor="end">Pin 3</text>
+<path d="M445 332 H318" class="wk"/>
+<circle cx="282" cy="332" r="2.6" class="term"/><circle cx="314" cy="332" r="2.6" class="term"/><path d="M282 329 L312 322" class="btn"/><path d="M298.0 325 v-8 M292.0 317 h12" class="btn"/>
+<path d="M278 332 H262" class="wg"/><path d="M262 332 v6 M255 338 h14 M257.5 341.5 h9 M260 345 h4" class="gndsym"/>
+<rect x="54" y="321" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="321" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="321" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="321" width="8.5" height="6.5" rx="1.3" class="mk on"/><rect x="54" y="329" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="329" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="329" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="329" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="54" y="337" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="337" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="337" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="337" width="8.5" height="6.5" rx="1.3" class="mk"/>
+<text x="72" y="336" class="b">Klein · oben</text>
+<text x="415" y="326" class="m small" text-anchor="end">Pin 4</text>
+<path d="M445 366 H318" class="wk"/>
+<circle cx="282" cy="366" r="2.6" class="term"/><circle cx="314" cy="366" r="2.6" class="term"/><path d="M282 363 L312 356" class="btn"/><path d="M298.0 359 v-8 M292.0 351 h12" class="btn"/>
+<path d="M278 366 H262" class="wg"/><path d="M262 366 v6 M255 372 h14 M257.5 375.5 h9 M260 379 h4" class="gndsym"/>
+<rect x="54" y="355" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="355" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="355" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="355" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="54" y="363" width="8.5" height="6.5" rx="1.3" class="mk on"/><rect x="44" y="363" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="363" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="363" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="54" y="371" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="371" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="371" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="371" width="8.5" height="6.5" rx="1.3" class="mk"/>
+<text x="72" y="370" class="b">Zeige · Mitte</text>
+<text x="415" y="360" class="m small" text-anchor="end">Pin 5</text>
+<path d="M445 400 H318" class="wk"/>
+<circle cx="282" cy="400" r="2.6" class="term"/><circle cx="314" cy="400" r="2.6" class="term"/><path d="M282 397 L312 390" class="btn"/><path d="M298.0 393 v-8 M292.0 385 h12" class="btn"/>
+<path d="M278 400 H262" class="wg"/><path d="M262 400 v6 M255 406 h14 M257.5 409.5 h9 M260 413 h4" class="gndsym"/>
+<rect x="54" y="389" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="389" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="389" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="389" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="54" y="397" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="397" width="8.5" height="6.5" rx="1.3" class="mk on"/><rect x="34" y="397" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="397" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="54" y="405" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="405" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="405" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="405" width="8.5" height="6.5" rx="1.3" class="mk"/>
+<text x="72" y="404" class="b">Mittel · Mitte</text>
+<text x="415" y="394" class="m small" text-anchor="end">Pin 6</text>
+<path d="M445 434 H318" class="wk"/>
+<circle cx="282" cy="434" r="2.6" class="term"/><circle cx="314" cy="434" r="2.6" class="term"/><path d="M282 431 L312 424" class="btn"/><path d="M298.0 427 v-8 M292.0 419 h12" class="btn"/>
+<path d="M278 434 H262" class="wg"/><path d="M262 434 v6 M255 440 h14 M257.5 443.5 h9 M260 447 h4" class="gndsym"/>
+<rect x="54" y="423" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="423" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="423" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="423" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="54" y="431" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="431" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="431" width="8.5" height="6.5" rx="1.3" class="mk on"/><rect x="24" y="431" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="54" y="439" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="439" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="439" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="439" width="8.5" height="6.5" rx="1.3" class="mk"/>
+<text x="72" y="438" class="b">Ring · Mitte</text>
+<text x="415" y="428" class="m small" text-anchor="end">Pin 7</text>
+<path d="M445 468 H318" class="wk"/>
+<circle cx="282" cy="468" r="2.6" class="term"/><circle cx="314" cy="468" r="2.6" class="term"/><path d="M282 465 L312 458" class="btn"/><path d="M298.0 461 v-8 M292.0 453 h12" class="btn"/>
+<path d="M278 468 H262" class="wg"/><path d="M262 468 v6 M255 474 h14 M257.5 477.5 h9 M260 481 h4" class="gndsym"/>
+<rect x="54" y="457" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="457" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="457" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="457" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="54" y="465" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="465" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="465" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="465" width="8.5" height="6.5" rx="1.3" class="mk on"/><rect x="54" y="473" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="473" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="473" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="473" width="8.5" height="6.5" rx="1.3" class="mk"/>
+<text x="72" y="472" class="b">Klein · Mitte</text>
+<text x="415" y="462" class="m small" text-anchor="end">Pin 8</text>
+<path d="M445 502 H318" class="wk"/>
+<circle cx="282" cy="502" r="2.6" class="term"/><circle cx="314" cy="502" r="2.6" class="term"/><path d="M282 499 L312 492" class="btn"/><path d="M298.0 495 v-8 M292.0 487 h12" class="btn"/>
+<path d="M278 502 H262" class="wg"/><path d="M262 502 v6 M255 508 h14 M257.5 511.5 h9 M260 515 h4" class="gndsym"/>
+<rect x="54" y="491" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="491" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="491" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="491" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="54" y="499" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="44" y="499" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="499" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="499" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="54" y="507" width="8.5" height="6.5" rx="1.3" class="mk on"/><rect x="44" y="507" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="34" y="507" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="24" y="507" width="8.5" height="6.5" rx="1.3" class="mk"/>
+<text x="72" y="506" class="b">Zeige · unten</text>
+<text x="415" y="496" class="m small" text-anchor="end">Pin 9</text>
+<rect x="872" y="144" width="103" height="308" rx="10" class="box"/>
+<circle cx="935.5" cy="298.0" r="26" fill="none" stroke="var(--boxline)" stroke-width="2"/>
+<circle cx="935.5" cy="298.0" r="12" fill="var(--s)" opacity=".8"/>
+<text x="923.5" y="136" class="b" text-anchor="middle">Daumen-Stick</text>
+<text x="585" y="132" class="m small">frei</text>
+<path d="M555 162 H872" class="wg"/>
+<circle cx="872" cy="162" r="3" fill="var(--t)"/>
+<text x="864" y="156" class="small b" text-anchor="end">GND</text>
+<text x="585" y="200" class="m small">frei</text>
+<path d="M555 230 H872" class="wv"/>
+<circle cx="872" cy="230" r="3" fill="var(--t)"/>
+<text x="864" y="224" class="small b" text-anchor="end">VCC (+5 V)</text>
+<path d="M555 264 H640" class="wk"/>
+<circle cx="644" cy="264" r="2.6" class="term"/><circle cx="676" cy="264" r="2.6" class="term"/><path d="M644 261 L674 254" class="btn"/><path d="M660.0 257 v-8 M654.0 249 h12" class="btn"/>
+<path d="M680 264 H696" class="wg"/><path d="M696 264 v6 M689 270 h14 M691.5 273.5 h9 M694 277 h4" class="gndsym"/>
+<rect x="746" y="253" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="736" y="253" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="726" y="253" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="716" y="253" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="746" y="261" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="736" y="261" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="726" y="261" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="716" y="261" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="746" y="269" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="736" y="269" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="726" y="269" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="716" y="269" width="8.5" height="6.5" rx="1.3" class="mk on"/>
+<text x="764" y="268" class="b">Klein · unten</text>
+<text x="585" y="258" class="m small">Pin A3</text>
+<path d="M555 298 H640" class="wk"/>
+<circle cx="644" cy="298" r="2.6" class="term"/><circle cx="676" cy="298" r="2.6" class="term"/><path d="M644 295 L674 288" class="btn"/><path d="M660.0 291 v-8 M654.0 283 h12" class="btn"/>
+<path d="M680 298 H696" class="wg"/><path d="M696 298 v6 M689 304 h14 M691.5 307.5 h9 M694 311 h4" class="gndsym"/>
+<rect x="746" y="287" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="736" y="287" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="726" y="287" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="716" y="287" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="746" y="295" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="736" y="295" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="726" y="295" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="716" y="295" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="746" y="303" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="736" y="303" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="726" y="303" width="8.5" height="6.5" rx="1.3" class="mk on"/><rect x="716" y="303" width="8.5" height="6.5" rx="1.3" class="mk"/>
+<text x="764" y="302" class="b">Ring · unten</text>
+<text x="585" y="292" class="m small">Pin A2</text>
+<path d="M555 332 H872" class="ws"/>
+<circle cx="872" cy="332" r="3" fill="var(--t)"/>
+<text x="864" y="326" class="small b" text-anchor="end">VRx</text>
+<path d="M555 366 H872" class="ws"/>
+<circle cx="872" cy="366" r="3" fill="var(--t)"/>
+<text x="864" y="360" class="small b" text-anchor="end">VRy</text>
+<path d="M555 400 H610" class="wo"/>
+<text x="618" y="404" class="m small">Kalibrier-Taster (optional)</text>
+<path d="M555 434 H872" class="ws"/>
+<circle cx="872" cy="434" r="3" fill="var(--t)"/>
+<text x="864" y="428" class="small b" text-anchor="end">SW (Klick)</text>
+<path d="M555 468 H610" class="wo"/>
+<text x="618" y="472" class="m small">alternativ für SW</text>
+<path d="M555 502 H640" class="wk"/>
+<circle cx="644" cy="502" r="2.6" class="term"/><circle cx="676" cy="502" r="2.6" class="term"/><path d="M644 499 L674 492" class="btn"/><path d="M660.0 495 v-8 M654.0 487 h12" class="btn"/>
+<path d="M680 502 H696" class="wg"/><path d="M696 502 v6 M689 508 h14 M691.5 511.5 h9 M694 515 h4" class="gndsym"/>
+<rect x="746" y="491" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="736" y="491" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="726" y="491" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="716" y="491" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="746" y="499" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="736" y="499" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="726" y="499" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="716" y="499" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="746" y="507" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="736" y="507" width="8.5" height="6.5" rx="1.3" class="mk on"/><rect x="726" y="507" width="8.5" height="6.5" rx="1.3" class="mk"/><rect x="716" y="507" width="8.5" height="6.5" rx="1.3" class="mk"/>
+<text x="764" y="506" class="b">Mittel · unten</text>
+<text x="585" y="496" class="m small">Pin 10</text>
+<text x="24" y="600" class="m">Jede Taste: ein Bein an ihren Pin, das andere an GND (⏚). Alle ⏚ sind dieselbe Leitung –</text>
+<text x="24" y="620" class="m">einfach ein Draht von Taste zu Taste und weiter an einen GND-Pin. Keine Dioden nötig.</text>
+</svg>

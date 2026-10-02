@@ -269,6 +269,12 @@
   </div>
 
   <div class="card">
+    <h2 data-i18n="hWiring"></h2>
+    <a id="wiringLink" href="wiring-de.svg" target="_blank" rel="noopener"><img id="wiring" src="wiring-de.svg" alt="" style="width:100%;height:auto;display:block"></a>
+    <p class="hint" data-i18n="wiringHint"></p>
+  </div>
+
+  <div class="card">
     <h2 data-i18n="hDiag"></h2>
     <div id="diagStep" class="hint" style="margin-top:0" data-i18n="diagIntro"></div>
     <div class="row" style="margin-top:10px">
@@ -366,6 +372,7 @@ const STR = {
     gTapTitle: 'Stick kurz drücken', gTapText: 'schaltet zum nächsten Modus weiter',
     gHoldTitle: 'Stick 3 Sekunden halten', gHoldText: 'öffnet den Bootloader zum Flashen',
     gMouseTitle: 'Im Maus-Modus halten', gMouseText: 'Rechtsklick, solange gehalten',
+    hWiring: 'Verdrahtungsplan', wiringHint: 'Anklicken öffnet den Plan groß. Pin 0 heißt auf der Platine RXI, Pin 1 heißt TXO. Die Pin-Nummer steht im Abbild oben auch klein auf jeder Taste.',
     hDiag: 'Verdrahtungs-Check', diagIntro: 'Prüft Stick-Achsen, Stick-Klick und alle Tasten-Pins auf typische Verdrahtungsfehler. Die einzelnen Tasten prüfst du am schnellsten mit „Tastentest“ oben.',
     diagStart: 'Check starten', next: 'Weiter', measuring: 'Messe…',
     diag1: 'Schritt 1/4: Keypad nicht berühren, dann „Weiter“.',
@@ -483,6 +490,7 @@ const STR = {
     gTapTitle: 'Tap the stick', gTapText: 'switches to the next mode',
     gHoldTitle: 'Hold the stick for 3 seconds', gHoldText: 'opens the bootloader for flashing',
     gMouseTitle: 'Hold in mouse mode', gMouseText: 'right click while held',
+    hWiring: 'Wiring plan', wiringHint: 'Click to open it full size. Pin 0 is labelled RXI on the board, pin 1 is TXO. The pin number is also printed small on each key in the picture above.',
     hDiag: 'Wiring check', diagIntro: 'Checks stick axes, stick click and all key pins for common wiring mistakes. The quickest way to check each key is “Key test” above.',
     diagStart: 'Start check', next: 'Next', measuring: 'Measuring…',
     diag1: 'Step 1/4: don’t touch the keypad, then “Next”.',
@@ -1293,6 +1301,8 @@ function applyLanguage() {
     if (e instanceof SVGElement) e.textContent = t(e.dataset.i18n); else e.innerHTML = t(e.dataset.i18n);
   });
   $('connect').textContent = t(port ? 'disconnect' : 'connect');
+  $('wiring').src = $('wiringLink').href = `wiring-${lang}.svg`;
+  $('wiring').alt = t('hWiring');
   updateRotLabel();
   $('cal').textContent = t('cal');
   setStatus(statusMsg[0], statusMsg[2], ...statusMsg[1]);

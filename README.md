@@ -5,8 +5,6 @@ Pro Micro und ein Web-Mapper, in dem man auf ein Abbild des Keypads klickt und d
 
 **Mapper:** https://moisschen.github.io/js-keypad/ (Chrome oder Edge, Web Serial)
 
-inspired by [Jasp](https://github.com/multifex/prototypes/tree/main/jasp-keyboard-joystick)
-
 ## Funktionen
 
 - Klickbares Abbild: Taste anklicken (oder am Keypad drücken) → gewünschte Taste auf der PC-Tastatur
@@ -19,6 +17,8 @@ inspired by [Jasp](https://github.com/multifex/prototypes/tree/main/jasp-keyboar
 
 ## Verdrahtung
 
+![Verdrahtungsplan](docs/wiring-de.svg)
+
 Jede Taste zwischen Pin und GND, keine Dioden/Matrix (`INPUT_PULLUP`):
 
 |        | Zeige | Mittel | Ring | Klein |
@@ -29,6 +29,7 @@ Jede Taste zwischen Pin und GND, keine Dioden/Matrix (`INPUT_PULLUP`):
 
 Stick: VRx → A1, VRy → A0, SW → 14 (oder 16), dazu VCC und GND. Pin 15 = Kalibrier-Taster (optional),
 Pin 2 = LED (optional).
+Auf der Platine heißt Pin 0 **RXI** und Pin 1 **TXO**. Der Plan wird mit `python tools/make_wiring.py` erzeugt.
 
 ## Rettung
 
