@@ -32,8 +32,14 @@ Jede Taste zwischen Pin und GND, keine Dioden/Matrix (`INPUT_PULLUP`):
 
 Daumentaste (unter dem Stick): Pin 15.
 
-Stick: VRx → A1, VRy → A0, SW → 14 (oder 16), dazu VCC und GND. Pin 2 = LED (optional).
-Auf der Platine heißt Pin 0 **RXI** und Pin 1 **TXO**. Der Plan wird mit `python tools/make_wiring.py` erzeugt.
+Die Tabelle ist die Standard-Verdrahtung. Der Plan oben zeigt die tatsächlich gelötete (angelernte) Zuordnung und den
+Pro Micro **von unten**, weil er kopfüber im Gehäuse liegt – so sieht man ihn beim Löten. Tasten in anderer
+Reihenfolge angeschlossen? Im Mapper „Verdrahtung anlernen“.
+
+Stick (PS5-Hall-Stick): Y → A1, X → A0, Switch → 14 (oder 16), **beide** GND und **beide** VCC anschließen.
+Läuft eine Richtung verkehrt herum, im Mapper umkehren. Pin 2 = LED (optional).
+Auf der Platine heißt Pin 0 **RXI** und Pin 1 **TXO**. Der Plan wird mit `python tools/make_wiring.py` erzeugt
+(Zuordnung oben in der Datei: `KEY_PINS`).
 
 ## Rettung
 
