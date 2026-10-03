@@ -17,6 +17,21 @@ Pro Micro und ein Web-Mapper, in dem man auf ein Abbild des Keypads klickt und d
   markierte Taste einmal drücken – die Zuordnung wird auf dem Keypad gespeichert.
 - Ohne angeschlossenen Stick „Stick angeschlossen“ abhaken, sonst lösen die offenen Eingänge Richtungstasten aus.
 - Firmware direkt aus dem Browser aufspielen (auch auf einen neuen Pro Micro).
+- **Profile** (bis zu 8, auf dem Keypad gespeichert): eigene Belegung, Stick-Modus und Programm pro Spiel.
+- **Doppelklick:** zweite Belegung pro Taste – erster Tipp sofort normal, schneller zweiter Tipp sendet die andere Taste
+  (z. B. 1 = Slot 1, doppelt = Slot 5).
+- **Daumen-Ebene:** Daumentaste halten = zweite Belegung für die 12 Fingertasten, kurz tippen = normale Daumentaste.
+- Stick-Gesten beim Einstecken frei einstellbar (Richtung → Modus).
+
+## Windows-Programm „JS-Keypad Profile“
+
+Download: [Releases](https://github.com/Moisschen/js-keypad/releases) → `JS-Keypad Profile.exe`
+
+- Schaltet das Profil automatisch um, sobald das zugehörige Spiel im Vordergrund ist, und zurück zur Standardbelegung.
+- Enthält den Mapper (offline) mit Programm-Icons und Programmliste bei den Profilen.
+- Symbol im Infobereich, optional Meldung beim Umschalten und Start mit Windows.
+
+Im Browser funktioniert alles außer dem automatischen Umschalten, den Programm-Icons und den Programm-Einstellungen.
 
 ## Verdrahtung
 
@@ -44,8 +59,8 @@ Auf der Platine heißt Pin 0 **RXI** und Pin 1 **TXO**. Der Plan wird mit `pytho
 ## Rettung
 
 Stick-Klick beim Einstecken **3 Sekunden halten** → Bootloader, dann im Mapper „2. Firmware aufspielen“.
-Kurz klicken beim Einstecken schaltet den Stick-Modus weiter; Stick beim Einstecken hoch/rechts/runter
-halten wählt Tastatur/Controller/Maus direkt.
+Kurz klicken beim Einstecken schaltet den Stick-Modus weiter; Stick beim Einstecken in eine Richtung halten wählt
+den Modus direkt (Standard: hoch Tastatur, rechts Controller, runter Maus – änderbar unter „Einstellungen“).
 
 ## Bauen
 
@@ -56,3 +71,12 @@ halten wählt Tastatur/Controller/Maus direkt.
 Braucht `arduino-cli` mit `arduino:avr`. Baut `firmware/js_keypad`, kopiert das Hex nach `docs/` und
 schreibt die Version nach `docs/firmware-version.txt`. Vor jedem Release `FirmwareVersion` in
 `js_keypad.ino` hochzählen und `docs/` mit committen – GitHub Pages liefert den Mapper aus `docs/`.
+
+Windows-Programm (bündelt `docs/` in die exe):
+
+```bash
+python -m pip install pyserial psutil pystray pillow pyinstaller
+app/build_app.sh
+```
+
+Logo und Icons: `python tools/make_logo.py`.
