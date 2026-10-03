@@ -214,7 +214,16 @@ def build(lang):
 
 
 if __name__ == '__main__':
+    import hashlib
+    import re
     docs = Path(__file__).resolve().parent.parent / 'docs'
+    digest = hashlib.md5()
     for lang in TEXT:
-        (docs / f'wiring-{lang}.svg').write_text(build(lang), encoding='utf-8')
+        svg = build(lang)
+        digest.update(svg.encode('utf-8'))
+        (docs / f'wiring-{lang}.svg').write_text(svg, encoding='utf-8')
         print('wrote', docs / f'wiring-{lang}.svg')
+    # Kennung im Mapper: neuer Plan -> neue Bild-URL, der Browser nimmt nicht die alte Datei aus dem Cache
+    html = docs / 'index.html'
+    text = html.read_text(encoding='utf-8')
+    html.write_text(re.sub(r"const WIRING_V = '[^']*';", f"const WIRING_V = '{digest.hexdigest()[:8]}';", text), encoding='utf-8')
