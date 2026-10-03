@@ -1,7 +1,7 @@
 // Offline cache for the JS-Keypad mapper: the page and the firmware image.
 // Network first, so a fresh firmware is picked up as soon as there is internet again.
-const CACHE = 'js-keypad-v10';
-const FILES = ['./', 'index.html', 'firmware.hex', 'firmware-version.txt', 'manifest.json', 'wiring-de.svg', 'wiring-en.svg'];
+const CACHE = 'js-keypad-v28';
+const FILES = ['./', 'index.html', 'firmware.hex', 'firmware-version.txt', 'manifest.json', 'wiring-de.svg', 'wiring-en.svg', 'logo.svg', 'icon-32.png', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
@@ -13,7 +13,7 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
+  if (e.request.method !== 'GET' || new URL(e.request.url).pathname.includes('/api/')) return;  // live data, never cached
   e.respondWith(
     fetch(e.request)
       .then((res) => {

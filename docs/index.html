@@ -4,28 +4,34 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2563eb">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="icon" href="icon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#4f46e5">
 <title>JS-Keypad</title>
 <style>
   :root {
     --bg: #f4f5f7; --card: #fff; --text: #1d2330; --muted: #6b7280; --line: #dde1e7;
-    --accent: #2563eb; --accent-text: #fff; --ok: #16a34a; --bad: #dc2626; --warn: #d97706; --pressed: #bbf7d0;
+    --accent: #4f46e5; --accent-text: #fff; --grad: linear-gradient(135deg, #2563eb, #7c3aed);
+    --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 8px 24px rgba(16, 24, 40, .06); --ok: #16a34a; --bad: #dc2626; --warn: #d97706; --pressed: #bbf7d0;
     --shell: #e7eaef; --shell-line: #b9c1cd; --palm: #d6dbe3; --housing: #c4cad4; --key: #fdfdfe; --key-line: #b9c1cd; --key-shadow: #c8ced8; --sel: #dbe7ff;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #12151b; --card: #1b1f27; --text: #e6e8ec; --muted: #9aa3b2; --line: #2c323d;
-      --accent: #3b82f6; --ok: #22c55e; --bad: #f87171; --warn: #fbbf24; --pressed: #166534;
+      --bg: #0e1117; --card: #161a22; --text: #e8eaf0; --muted: #8f99ab; --line: #252b36;
+      --accent: #6366f1; --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 12px 32px rgba(0, 0, 0, .28); --ok: #22c55e; --bad: #f87171; --warn: #fbbf24; --pressed: #166534;
       --shell: #232833; --shell-line: #4a5263; --palm: #1c2029; --housing: #2b313d; --key: #2d3340; --key-line: #4a5263; --key-shadow: #15181e; --sel: #1e3a6e;
     }
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 "Segoe UI", system-ui, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+  #brand { display: flex; align-items: center; gap: 10px; }
+  #logo { width: 30px; height: 30px; border-radius: 8px; box-shadow: 0 4px 14px rgba(79, 70, 229, .35); }
   main { max-width: 820px; margin: 0 auto; padding: 24px 16px 48px; }
   h1 { font-size: 24px; margin: 0; letter-spacing: -.01em; }
   .sub { color: var(--muted); margin: 4px 0 20px; }
   .sub a, footer a { color: var(--accent); }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow); }
   .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 12px; }
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .grow { flex: 1; }
@@ -34,12 +40,22 @@
     border-radius: 8px; padding: 8px 14px; cursor: pointer;
   }
   button:hover:not(:disabled) { border-color: var(--accent); }
-  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  button.primary { background: var(--grad); color: var(--accent-text); border-color: transparent; font-weight: 600;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, .35); }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); border-color: transparent; }
   button.on { background: var(--sel); border-color: var(--accent); }
   button:disabled { opacity: .45; cursor: default; }
   #status { font-weight: 600; }
   #status.ok { color: var(--ok); } #status.bad { color: var(--bad); }
+  #status::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px;
+    vertical-align: 1px; background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
   input[type=range] { width: 100%; }
+  #profBox { margin-bottom: 8px; }
+  #profSel { flex: 1 1 180px; min-width: 0; max-width: 100%; text-overflow: ellipsis; }
+  #profActive { flex-basis: 100%; margin: 0; }
+  #profEdit input { min-width: 0 !important; flex: 1 1 140px; }
+  #profBox select, #profBox input[type=text] { font: inherit; padding: 5px 8px; border-radius: 8px;
+    border: 1px solid var(--line, #8884); background: var(--card, transparent); color: inherit; }
   .hint { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
   .nosupport { border-color: var(--bad); }
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -60,6 +76,8 @@
   #pad .key:hover .cap, #pad .key:focus-visible .cap { stroke: var(--accent); }
   #pad .key.sel .cap { stroke: var(--accent); stroke-width: 1.1; fill: var(--sel); }
   #pad .key.on .cap { fill: var(--pressed); }
+  #pad .key.flash .cap { animation: keyFlash .6s ease-out; }
+  @keyframes keyFlash { from { fill: var(--pressed); } }
   #pad .key .lbl { fill: var(--text); font: 600 5.2px "Segoe UI", system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
   #pad .key .lbl.small { font-size: 3.5px; }
   #pad .key.unbound .lbl { fill: var(--muted); font-weight: 400; }
@@ -68,6 +86,12 @@
   #pad .key.tested .check { display: inline; }
   #pad.testing .key:not(.tested):not(.stickpart) .cap { stroke: var(--warn); stroke-dasharray: 1.5 1; }
   #pad .stickpart.locked { cursor: default; }
+  #pad .key.off { opacity: .28; cursor: default; }
+  #pad.layer1 .key:not(.off) .cap, #pad.layer2 .key:not(.off) .cap { stroke: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+  #layerSeg { display: flex; margin-top: 14px; }
+  #layerSeg button { flex: 1; white-space: nowrap; padding: 6px 8px; }
+  #layerHint { margin: 8px 0 0; }
+  .layerSwitch { padding: 10px 0 2px; gap: 12px; }
   #pad .stickpart.locked .lbl { fill: var(--muted); font-weight: 400; }
   #pad .ring { fill: var(--shell); stroke: var(--shell-line); stroke-width: .6; }
   #pad .fingers { fill: var(--muted); font: 3px "Segoe UI", system-ui, sans-serif; text-anchor: middle; }
@@ -80,6 +104,7 @@
   #panelPin { color: var(--muted); font-size: 13px; }
   #current { min-width: 64px; text-align: center; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--key-line);
     background: var(--key); font-weight: 700; font-size: 17px; box-shadow: 0 2px 0 var(--key-shadow); }
+  #panel.nosel #current { opacity: .4; }
   #capture { margin: 12px 0 0; padding: 10px 12px; border-radius: 8px; border: 1px dashed var(--accent); color: var(--accent); font-weight: 600; }
   #capture.idle { border-color: var(--line); color: var(--muted); font-weight: 400; cursor: pointer; }
   .cats { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 8px; }
@@ -128,28 +153,161 @@
   #guide .usb { fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 24px; }
   [hidden] { display: none !important; }
+  #setupBtn { display: none; }
+
+  /* ---- Settings page ---- */
+  .setWrap { max-width: 760px; margin: 0 auto; }
+  .setHead { font-size: 24px; margin: 4px 0 18px; }
+  .setGroup { margin-bottom: 22px; }
+  .setGroupTitle { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+    margin: 0 0 8px 4px; }
+  .setGroupTitle:not(:first-child) { margin-top: 18px; }
+  .setCard { background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  .setRow { display: flex; align-items: center; gap: 18px; padding: 16px 18px; min-height: 40px; }
+  label.setRow { cursor: pointer; transition: background .15s; }
+  label.setRow:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  .setRow + .setRow { border-top: 1px solid var(--line); }
+  .setText { flex: 1; display: grid; gap: 3px; min-width: 0; }
+  .setText b { font-weight: 600; font-size: 15px; }
+  .setText small { color: var(--muted); font-size: 13px; line-height: 1.4; }
+  .setAbout img { border-radius: 12px; box-shadow: 0 4px 14px rgba(79, 70, 229, .35); }
+  .switch { position: relative; flex: none; width: 44px; height: 24px; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .switch i { position: absolute; inset: 0; border-radius: 999px; background: var(--line); transition: background .2s; pointer-events: none; }
+  .switch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .2s; }
+  .switch input:checked + i { background: var(--grad); }
+  .switch input:checked + i::after { transform: translateX(20px); }
+  .switch input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
+  select { font: inherit; font-size: 14px; color: var(--text); background-color: var(--bg); border: 1px solid var(--line);
+    border-radius: 8px; padding: 7px 34px 7px 12px; appearance: none; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238f99ab' stroke-width='1.6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; transition: border-color .15s; }
+  select:hover:not(:disabled) { border-color: var(--accent); }
+  select:disabled { opacity: .5; cursor: default; }
+  option { background: var(--card); color: var(--text); }
+  .setRow select { min-width: 190px; }
+  .seg { display: inline-flex; flex: none; padding: 3px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
+  .seg button { border: none; background: none; padding: 6px 14px; border-radius: 7px; color: var(--muted); font-weight: 600; }
+  .seg button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 4px rgba(0, 0, 0, .2); }
+
+  #tabs, #profList, #profTitle { display: none; }
+
+  /* ---- Desktop: app layout like a game peripheral suite, everything on one screen ---- */
+  @media (min-width: 1000px) {
+    html, body { height: 100%; overflow: hidden; }
+    main { max-width: none; height: 100vh; padding: 0; display: grid; grid-template-rows: auto 1fr; }
+    main > footer { display: none; }
+    #top { display: flex; align-items: center; gap: 18px; padding: 10px 18px; background: var(--card);
+      border-bottom: 1px solid var(--line); }
+    #top .sub { display: none; }
+    #titleRow { flex: 1; flex-wrap: nowrap; }
+    #titleRow h1 { flex: none; margin-right: 18px; font-size: 20px; }
+    #tabs { display: flex; gap: 4px; flex: 1; }
+    #tabs button { border: none; background: none; padding: 8px 16px; border-radius: 8px; color: var(--muted); font-weight: 600; }
+    #tabs button { transition: color .15s, background .15s; }
+    #tabs button:hover { color: var(--text); }
+    #tabs button[data-tab=setup] { display: none; }   /* reached with the button next to the connection */
+    #setupBtn { display: inline-block; }
+    #setupBtn.on { background: var(--grad); color: #fff; box-shadow: 0 0 0 2px var(--text) inset, 0 4px 14px rgba(79, 70, 229, .35); }
+    #tabs button.on { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--text);
+      box-shadow: inset 0 -2px 0 var(--accent); border-radius: 8px 8px 4px 4px; }
+    #top { box-shadow: 0 1px 0 var(--line), 0 6px 20px rgba(0, 0, 0, .12); position: relative; z-index: 2; }
+    #connCard .row { justify-content: flex-end; }
+    #status { padding: 6px 14px; border-radius: 999px; background: color-mix(in srgb, currentColor 10%, transparent); flex: none !important; }
+    #connCard { border: none; padding: 0; margin: 0; background: none; min-width: 330px; box-shadow: none; }
+    #connCard .row { flex-wrap: nowrap; }
+    #nosupport { margin: 0; }
+    .view { display: none !important; }
+    body[data-tab=keys] #viewKeys, body:not([data-tab]) #viewKeys { display: grid !important; }
+    body[data-tab=stick] #viewStick, body[data-tab=setup] #viewSetup,
+    body[data-tab=settings] #viewSettings { display: block !important; }
+    #viewStick, #viewSetup, #viewSettings { overflow: auto; padding: 18px; }
+    #viewSettings { padding-top: 28px; }
+    #langBtn { display: none; }
+    body[data-tab=setup] #viewSetup { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-areas: "fw wiring" "diag wiring" "guide wiring"; align-content: start; gap: 14px; overflow: hidden; }
+    #viewSetup > .card { margin: 0; max-width: none; }
+    #fwCard { grid-area: fw; } #diagCard { grid-area: diag; } #guideCard { grid-area: guide; }
+    #wiringCard { grid-area: wiring; display: flex; flex-direction: column; max-height: calc(100vh - 100px); }
+    #wiringCard a { flex: 1; min-height: 0; }
+    #wiring { height: 100% !important; width: 100% !important; object-fit: contain; }
+    body[data-tab=setup] #viewSetup > .card:not(#wiringCard) { overflow: auto; max-height: calc(100vh - 100px); }
+    #viewStick > *, #viewSetup > * { max-width: 1100px; margin-left: auto; margin-right: auto; }
+
+    #viewKeys { margin: 0; border: none; border-radius: 0; padding: 0; min-height: 0; box-shadow: none;
+      background: radial-gradient(ellipse 50% 55% at 50% 52%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%), var(--bg);
+      grid-template-columns: 270px minmax(0, 1fr) 390px; grid-template-rows: auto minmax(0, 1fr) auto;
+      grid-template-areas: "side head bind" "side pad bind" "side foot bind"; }
+    #profSide { grid-area: side; background: var(--card); border-right: 1px solid var(--line); padding: 16px 12px;
+      box-shadow: 8px 0 24px rgba(0, 0, 0, .08);
+      overflow: auto; min-height: 0; }
+    #keysHead { grid-area: head; padding: 14px 20px 0; }
+    #pad { grid-area: pad; width: 100%; height: 100%; min-height: 0; padding: 4px 20px; }
+    #keysFoot { grid-area: foot; padding: 0 20px 14px; }
+    #keysFoot #threshBox { margin-top: 0 !important; max-width: 420px; }
+    #panel { grid-area: bind; margin: 0; border-top: none; border-left: 1px solid var(--line); background: var(--card);
+      box-shadow: -8px 0 24px rgba(0, 0, 0, .08);
+      padding: 18px; overflow: auto; min-height: 0; }
+    #choices { grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); }
+
+    #profTitle { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+      font-weight: 600; margin-bottom: 10px; }
+    #profBox label[for=profSel], #profSel, #profActive { display: none; }
+    #profNew { flex-basis: 100% !important; }
+    #profList { display: grid; gap: 6px; margin-bottom: 12px; }
+    .pitem { text-align: left; display: grid; grid-template-columns: 38px minmax(0, 1fr); column-gap: 10px; align-items: center;
+      padding: 9px 10px; border-radius: 12px; position: relative; border-color: transparent; background: transparent;
+      transition: background .15s, border-color .15s; }
+    .pitem:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 8%, transparent); border-color: transparent; }
+    .pitem .pav { grid-row: span 2; width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center;
+      color: #fff; font-weight: 700; font-size: 14px; letter-spacing: .02em; box-shadow: 0 3px 10px rgba(0, 0, 0, .25); }
+    .pitem .pav.hasIcon { background: var(--bg) !important; border: 1px solid var(--line); padding: 5px; }
+    .pitem .pav img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .pitem b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 44px; }
+    .pitem small { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pitem.cur { border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+      background: color-mix(in srgb, var(--accent) 14%, transparent); }
+    .pitem .badge { position: absolute; right: 10px; top: 9px; font-size: 11px; color: var(--ok); font-weight: 600; }
+    #profBox .row { gap: 6px; }
+    #profBox .row button { flex: 1; }
+    #profEdit { display: grid !important; gap: 6px; margin-top: 12px !important; }
+    #profEdit[hidden] { display: none !important; }
+
+    #profEdit input { width: 100% !important; min-width: 0 !important; }
+  }
 </style>
 </head>
 <body>
 <main>
-  <div class="row"><h1 class="grow">JS-Keypad</h1><button id="langBtn" title="Sprache / Language">EN</button></div>
+  <header id="top">
+  <div class="row" id="titleRow"><h1 class="grow" id="brand"><img src="logo.svg" alt="" id="logo"><span>JS-Keypad</span></h1>
+    <nav id="tabs">
+      <button data-tab="keys" class="on" data-i18n="tabKeys"></button>
+      <button data-tab="stick" data-i18n="tabStick"></button>
+      <button data-tab="setup" data-i18n="tabSetup"></button>
+      <button data-tab="settings" data-i18n="tabSettings"></button>
+    </nav>
+    <button id="langBtn" title="Sprache / Language">EN</button></div>
   <p class="sub" data-i18n="sub"></p>
 
   <div class="card nosupport" id="nosupport" hidden data-i18n="nosupport"></div>
 
-  <div class="card">
+  <div class="card" id="connCard">
     <div class="row">
       <span id="status" class="bad grow"></span>
+      <button id="setupBtn" class="primary" data-i18n="tabSetup"></button>
       <button id="connect" class="primary"></button>
     </div>
   </div>
+  </header>
 
-  <div class="card">
+  <div class="card view" id="viewKeys">
+    <div id="keysHead">
     <div class="row" style="margin-bottom:6px">
       <h2 class="grow" style="margin:0" data-i18n="hKeys"></h2>
       <span id="testInfo" hidden></span>
-      <button id="learnBtn" data-i18n="learn"></button>
-      <button id="testBtn" data-i18n="test"></button>
+      <button id="testEnd" hidden data-i18n="testStop"></button>
     </div>
     <div id="learnBox" class="learn" hidden>
       <div id="learnText"></div>
@@ -158,6 +316,37 @@
         <button id="learnSkip" data-i18n="learnSkip"></button>
         <button id="learnCancel" data-i18n="learnCancel"></button>
       </div>
+    </div>
+    </div>
+    <div id="profSide">
+    <div id="profNeedFw" class="hint" hidden data-i18n="profNeedFw"></div>
+    <div id="profBox" hidden>
+      <div id="profTitle" data-i18n="profiles"></div>
+      <div id="profList"></div>
+      <div class="row">
+        <label for="profSel" data-i18n="profile"></label>
+        <select id="profSel"></select>
+        <button id="profNew" data-i18n="profNew"></button>
+        <button id="profUse" data-i18n="profUse"></button>
+        <button id="profDel" data-i18n="profDel"></button>
+        <span id="profActive" class="hint grow"></span>
+      </div>
+      <div class="row" id="profEdit" style="margin-top:6px">
+        <input id="profName" type="text" maxlength="15" style="width:10em">
+        <input id="profExe" type="text" maxlength="47" class="grow" style="min-width:16em" list="progList">
+        <datalist id="progList"></datalist>
+      </div>
+      <div class="row" id="profModeRow" style="margin-top:6px" hidden>
+        <label for="profMode" data-i18n="profModeLabel"></label>
+        <select id="profMode" class="grow">
+          <option value="3" data-i18n="profModeKeep"></option>
+          <option value="0" data-i18n="modeKeyboard"></option>
+          <option value="1" data-i18n="modeGamepad"></option>
+          <option value="2" data-i18n="modeMouse"></option>
+        </select>
+      </div>
+      <p class="hint" style="margin:6px 0 4px" data-i18n="profHint"></p>
+    </div>
     </div>
     <svg id="pad" viewBox="0 0 10 10" role="group"></svg>
 
@@ -169,6 +358,16 @@
         </div>
         <div id="current">–</div>
       </div>
+      <div class="seg" id="layerSeg" hidden>
+        <button data-layer="0" data-i18n="layer0"></button>
+        <button data-layer="1" data-i18n="layer1"></button>
+        <button data-layer="2" data-i18n="layer2"></button>
+      </div>
+      <p class="hint" id="layerHint" hidden></p>
+      <label class="setRow layerSwitch" id="thumbRow" hidden>
+        <span class="setText"><b data-i18n="thumbLayer"></b><small data-i18n="thumbLayerSub"></small></span>
+        <span class="switch"><input type="checkbox" id="thumbLayer"><i></i></span>
+      </label>
       <div id="capture"></div>
       <div class="cats" id="cats"></div>
       <div id="choices"></div>
@@ -177,6 +376,7 @@
       </div>
     </div>
 
+    <div id="keysFoot">
     <div id="threshBox" style="margin-top:14px">
       <label for="thresh" id="threshLabel"></label>
       <input type="range" id="thresh" min="20" max="95" step="5" value="50" disabled>
@@ -187,8 +387,10 @@
       <button id="restore" disabled data-i18n="restore"></button>
       <input type="file" id="restoreFile" accept="application/json" hidden>
     </div>
+    </div>
   </div>
 
+  <section class="view" id="viewStick">
   <div class="two stack">
     <div class="card">
       <h2 data-i18n="hMode"></h2>
@@ -239,8 +441,10 @@
     <div class="steampad" id="steampad"></div>
     <p class="hint" data-i18n="steamHint"></p>
   </div>
+  </section>
 
-  <div class="card">
+  <section class="view" id="viewSetup">
+  <div class="card" id="guideCard">
     <details>
       <summary data-i18n="hGuide"></summary>
       <svg id="guide" viewBox="0 0 520 330" role="img">
@@ -289,22 +493,25 @@
     </details>
   </div>
 
-  <div class="card">
+  <div class="card" id="wiringCard">
     <h2 data-i18n="hWiring"></h2>
     <a id="wiringLink" href="wiring-de.svg" target="_blank" rel="noopener"><img id="wiring" src="wiring-de.svg" alt="" style="width:100%;height:auto;display:block"></a>
     <p class="hint" data-i18n="wiringHint"></p>
   </div>
 
-  <div class="card">
+  <div class="card" id="diagCard">
     <h2 data-i18n="hDiag"></h2>
     <div id="diagStep" class="hint" style="margin-top:0" data-i18n="diagIntro"></div>
     <div class="row" style="margin-top:10px">
       <button id="diagBtn" disabled data-i18n="diagStart"></button>
+      <button id="learnBtn" data-i18n="learn"></button>
+      <button id="testBtn" data-i18n="test"></button>
     </div>
+    <p class="hint" data-i18n="learnWhere"></p>
     <ul id="diagResult" class="diag"></ul>
   </div>
 
-  <div class="card">
+  <div class="card" id="fwCard">
     <h2 data-i18n="hFw"></h2>
     <div class="row">
       <button id="fwUpdate" class="primary" disabled data-i18n="fwUpdate"></button>
@@ -322,6 +529,72 @@
     <div id="fwStatus" class="hint"></div>
   </div>
 
+  </section>
+
+  <section class="view" id="viewSettings">
+    <div class="setWrap">
+      <h2 class="setHead" data-i18n="tabSettings"></h2>
+
+      <div class="setGroup" id="setApp">
+        <div class="setGroupTitle" data-i18n="setGrpSwitch"></div>
+        <div class="setCard">
+          <label class="setRow">
+            <span class="setText"><b data-i18n="setAuto"></b><small data-i18n="setAutoSub"></small></span>
+            <span class="switch"><input type="checkbox" id="setAuto"><i></i></span>
+          </label>
+          <label class="setRow">
+            <span class="setText"><b data-i18n="setNotify"></b><small data-i18n="setNotifySub"></small></span>
+            <span class="switch"><input type="checkbox" id="setNotify"><i></i></span>
+          </label>
+        </div>
+        <div class="setGroupTitle" data-i18n="setGrpApp"></div>
+        <div class="setCard">
+          <label class="setRow">
+            <span class="setText"><b data-i18n="setAutostart"></b><small data-i18n="setAutostartSub"></small></span>
+            <span class="switch"><input type="checkbox" id="setAutostart"><i></i></span>
+          </label>
+        </div>
+      </div>
+      <div class="setGroup" id="setOnline">
+        <div class="setGroupTitle" data-i18n="setGrpSwitch"></div>
+        <div class="setCard"><div class="setRow"><span class="setText"><b data-i18n="setOnlyApp"></b>
+          <small data-i18n="setOnlyAppSub"></small></span></div></div>
+      </div>
+
+      <div class="setGroup">
+        <div class="setGroupTitle" data-i18n="setGrpGesture"></div>
+        <div class="setCard" id="gestCard">
+          <div class="setRow" id="gestNeed"><span class="setText"><b data-i18n="gestNeed"></b><small data-i18n="gestNeedSub"></small></span></div>
+          <div class="setRow" data-dir="0"><span class="setText"><b data-i18n="gestUp"></b></span><select class="gestSel"></select></div>
+          <div class="setRow" data-dir="1"><span class="setText"><b data-i18n="gestDown"></b></span><select class="gestSel"></select></div>
+          <div class="setRow" data-dir="2"><span class="setText"><b data-i18n="gestLeft"></b></span><select class="gestSel"></select></div>
+          <div class="setRow" data-dir="3"><span class="setText"><b data-i18n="gestRight"></b></span><select class="gestSel"></select></div>
+          <div class="setRow"><span class="setText"><small data-i18n="gestHint"></small></span></div>
+        </div>
+      </div>
+
+      <div class="setGroup">
+        <div class="setGroupTitle" data-i18n="setGrpGeneral"></div>
+        <div class="setCard">
+          <div class="setRow">
+            <span class="setText"><b data-i18n="setLang"></b><small data-i18n="setLangSub"></small></span>
+            <span class="seg" id="langSeg"><button data-lang="de">Deutsch</button><button data-lang="en">English</button></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="setGroup">
+        <div class="setGroupTitle" data-i18n="setGrpAbout"></div>
+        <div class="setCard">
+          <div class="setRow setAbout">
+            <img src="logo.svg" alt="" width="44" height="44">
+            <span class="setText"><b>JS-Keypad</b><small id="setVersions"></small></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <footer>JS-Keypad · <a href="https://github.com/multifex/prototypes/tree/main/jasp-keyboard-joystick" target="_blank" rel="noopener">inspired by Jasp</a></footer>
 </main>
 
@@ -333,9 +606,22 @@ const STR = {
     nosupport: 'Dieser Browser kann nicht mit USB-Geräten sprechen. Bitte <b>Chrome</b> oder <b>Edge</b> am PC verwenden.',
     connect: 'Verbinden', disconnect: 'Trennen', notConnected: 'Nicht verbunden', connected: 'Verbunden',
     connectFailed: (m) => `Verbinden fehlgeschlagen – ist noch ein anderes Programm mit dem Keypad verbunden? (${m})`,
-    connLost: 'Verbindung getrennt', unplugged: 'Keypad abgesteckt',
+    connLost: 'Verbindung getrennt', unplugged: 'Keypad abgesteckt – verbindet sich beim Einstecken wieder',
+    autoBusy: 'Keypad gefunden, gerade belegt – neuer Versuch …',
     notKeypad: 'Verbunden, aber auf dem Gerät läuft keine JS-Keypad-Firmware – unten „Firmware aktualisieren“ klicken.',
     hKeys: 'Tastenbelegung',
+    tabKeys: 'Tasten', tabStick: 'Stick & Modus', tabSetup: 'Setup', profiles: 'Profile',
+    profModeLabel: 'Stick-Modus', profModeKeep: 'nicht ändern',
+    profNeedFw: 'Profile gibt es ab Firmware 1.5 – unter „Setup“ die Firmware aktualisieren.',
+    profBadge: 'aktiv', profStdSub: 'überall sonst', profNoExe: 'kein Programm – nur manuell',
+    profile: 'Profil', profStd: 'Standardbelegung', profNew: 'Neues Profil', profUse: 'Jetzt aktivieren',
+    profDel: 'Löschen', profNamePh: 'Name des Profils', profExePh: 'Programm, z. B. FortniteClient-Win64-Shipping.exe',
+    profActive: (n) => `Aktiv auf dem Keypad: ${n}`, profFull: 'Alle 8 Profilplätze sind belegt.',
+    profDelConfirm: (n) => `Profil „${n}“ löschen?`, profNewName: (i) => `Profil ${i}`,
+    profDefaults: 'Standardbelegung übernehmen', profDefaultsConfirm: 'Die Standardbelegung in dieses Profil kopieren?',
+    profHint: 'Profile liegen auf dem Keypad. Automatisch umschalten, sobald ein Spiel läuft, kann das Windows-Programm '
+      + '„JS-Keypad Profile“. Ohne das Programm schaltest du hier mit „Jetzt aktivieren“ um – nach dem Abstecken gilt '
+      + 'wieder die Standardbelegung.',
     fingers: ['Zeigefinger', 'Mittelfinger', 'Ringfinger', 'Kleiner Finger'],
     rows: ['obere Reihe', 'mittlere Reihe', 'untere Reihe'],
     thumbKey: 'Daumentaste (unter dem Stick)',
@@ -352,6 +638,13 @@ const STR = {
     cats: { letters: 'Buchstaben', digits: 'Zahlen', fkeys: 'F-Tasten', control: 'Steuerung', mods: 'Shift/Strg/Alt',
       numpad: 'Ziffernblock', symbols: 'Zeichen' },
     none: 'Keine', unbound: 'nicht belegt',
+    noSel: 'Keine Taste ausgewählt', noSelHint: 'Klicke im Bild auf die Taste, die du ändern willst. Esc hebt die Auswahl wieder auf.',
+    layer0: 'Normal', layer1: 'Doppelklick', layer2: 'Daumen-Ebene', noDouble: 'Aus', sameKey: 'Normal',
+    layer1Hint: 'Zweimal schnell tippen (innerhalb 0,25 s) sendet diese Taste. Der erste Tipp sendet sofort die normale Taste – z. B. 1 = Slot 1, doppelt = Slot 5.',
+    layer2Hint: 'Solange die Daumentaste gehalten wird, senden die Fingertasten diese Belegung. „Normal“ = die Taste bleibt wie sonst.',
+    thumbLayer: 'Daumentaste als Umschalter', thumbLayerSub: 'Kurz tippen sendet weiter die normale Daumentaste (beim Loslassen), gedrückt halten schaltet auf diese Ebene.',
+    layerOff: 'Diese Taste hat in dieser Ebene keine Belegung.',
+    needFw16: 'Doppelklick und Daumen-Ebene brauchen Firmware 1.6.',
     saving: 'Speichere…', saved: 'Gespeichert – bleibt auch nach dem Abstecken', saveFailed: 'Speichern fehlgeschlagen',
     restored: 'Standardbelegung wiederhergestellt',
     thresh: (v) => `Stick-Auslösepunkt: ${v} % Stickweg`,
@@ -360,6 +653,22 @@ const STR = {
     backupDone: 'Einstellungen als Datei gespeichert', restoreDone: 'Sicherung übernommen',
     restoreFailed: 'Datei passt nicht zum JS-Keypad',
     test: 'Tastentest', testStop: 'Test beenden',
+    tabSettings: 'Einstellungen', setGrpSwitch: 'Profilwechsel', setGrpApp: 'Programm', setGrpGeneral: 'Allgemein',
+    setGrpAbout: 'Info',
+    setAuto: 'Automatisch umschalten',
+    setAutoSub: 'Wechselt das Profil, sobald ein Programm mit eigenem Profil im Vordergrund ist, und zurück zur Standardbelegung.',
+    setNotify: 'Meldung beim Umschalten', setNotifySub: 'Kurze Windows-Benachrichtigung mit dem Namen des neuen Profils.',
+    setAutostart: 'Mit Windows starten',
+    setAutostartSub: 'Startet beim Anmelden unsichtbar im Infobereich, damit die Profile sofort umschalten.',
+    setOnlyApp: 'Nur im Windows-Programm',
+    setOnlyAppSub: 'Automatisches Umschalten und Autostart gibt es im Programm „JS-Keypad Profile“. Diese Seite im Browser bearbeitet nur Tasten und Profile.',
+    setLang: 'Sprache', setLangSub: 'Sprache der Oberfläche.',
+    setGrpGesture: 'Stick beim Einstecken', gestUp: 'Stick nach oben', gestDown: 'Stick nach unten',
+    gestLeft: 'Stick nach links', gestRight: 'Stick nach rechts', gestKeep: 'Modus behalten',
+    gestNeed: 'Keypad verbinden', gestNeedSub: 'Die Gesten liegen auf dem Keypad – sichtbar, sobald es verbunden ist (ab Firmware 1.6).',
+    gestHint: 'Den Stick beim Einstecken in eine Richtung halten wählt den Modus ohne PC. Kurz klicken beim Einstecken schaltet reihum weiter, 3 s halten startet den Bootloader.',
+    setVer: (have, latest) => `Firmware auf dem Keypad: ${have || '–'} · Aktuelle Firmware: ${latest || '–'}`,
+    learnWhere: 'Anlernen und Tastentest laufen auf der Seite „Tasten“ – die Belegung dort zeigt, welche Taste gerade dran ist.',
     learn: 'Verdrahtung anlernen', learnSkip: 'Überspringen', learnCancel: 'Abbrechen',
     learnStep: (n, total, name) => `Taste ${n} von ${total}: jetzt „${name}“ am Keypad drücken (im Bild markiert).`,
     learnDup: (pin, name) => `Pin ${pin} ist schon „${name}“ zugeordnet – die markierte Taste drücken oder „Überspringen“.`,
@@ -382,7 +691,7 @@ const STR = {
       NumpadAdd: ['Ziffernblock +', 'Num +'], NumpadEnter: ['Ziffernblock Enter', 'Num ⏎'], NumpadDecimal: ['Ziffernblock ,', 'Num ,'],
       Numpad: (d) => [`Ziffernblock ${d}`, `Num ${d}`],
     },
-    hMode: 'Stick-Modus', modeHint: 'Die 13 Tasten sind immer Tastatur-Tasten, der Modus gilt nur für den Stick. Ohne PC umschalten: beim Einstecken Stick halten (hoch = Tastatur, rechts = Controller, runter = Maus) oder kurz klicken, das schaltet reihum weiter. Beim Umschalten startet das Keypad neu – danach einmal neu verbinden.',
+    hMode: 'Stick-Modus', modeHint: 'Die 13 Tasten sind immer Tastatur-Tasten, der Modus gilt nur für den Stick. Ohne PC umschalten: beim Einstecken den Stick in eine Richtung halten (welche Richtung welchen Modus wählt, stellst du unter „Einstellungen“ ein) oder kurz klicken, das schaltet reihum weiter. Beim Umschalten startet das Keypad neu – danach einmal neu verbinden.',
     modeGamepad: 'Controller', modeKeyboard: 'Tastatur', modeMouse: 'Maus', modeUnknown: 'unbekannt',
     modeNow: (m) => `Aktiver Modus: ${m}`,
     speed: (v) => `Mausgeschwindigkeit: ${v} von 20`,
@@ -460,9 +769,21 @@ const STR = {
     nosupport: 'This browser can’t talk to USB devices. Please use <b>Chrome</b> or <b>Edge</b> on a PC.',
     connect: 'Connect', disconnect: 'Disconnect', notConnected: 'Not connected', connected: 'Connected',
     connectFailed: (m) => `Connecting failed – is another program connected to the keypad? (${m})`,
-    connLost: 'Connection lost', unplugged: 'Keypad unplugged',
+    connLost: 'Connection lost', unplugged: 'Keypad unplugged – reconnects when plugged in',
+    autoBusy: 'Keypad found but busy – retrying …',
     notKeypad: 'Connected, but the device isn’t running JS-Keypad firmware – click “Update firmware” below.',
     hKeys: 'Key mapping',
+    tabKeys: 'Keys', tabStick: 'Stick & mode', tabSetup: 'Setup', profiles: 'Profiles',
+    profModeLabel: 'Stick mode', profModeKeep: 'keep as is',
+    profNeedFw: 'Profiles need firmware 1.5 – update it under "Setup".',
+    profBadge: 'active', profStdSub: 'everywhere else', profNoExe: 'no program – manual only',
+    profile: 'Profile', profStd: 'Standard mapping', profNew: 'New profile', profUse: 'Activate now',
+    profDel: 'Delete', profNamePh: 'Profile name', profExePh: 'Program, e.g. FortniteClient-Win64-Shipping.exe',
+    profActive: (n) => `Active on the keypad: ${n}`, profFull: 'All 8 profile slots are in use.',
+    profDelConfirm: (n) => `Delete profile "${n}"?`, profNewName: (i) => `Profile ${i}`,
+    profDefaults: 'Copy standard mapping', profDefaultsConfirm: 'Copy the standard mapping into this profile?',
+    profHint: 'Profiles are stored on the keypad. Switching automatically when a game runs is done by the Windows app '
+      + '"JS-Keypad Profile". Without it, use "Activate now" here – after unplugging the standard mapping is active again.',
     fingers: ['Index finger', 'Middle finger', 'Ring finger', 'Little finger'],
     rows: ['top row', 'home row', 'bottom row'],
     thumbKey: 'Thumb key (under the stick)',
@@ -479,6 +800,13 @@ const STR = {
     cats: { letters: 'Letters', digits: 'Digits', fkeys: 'F keys', control: 'Control', mods: 'Shift/Ctrl/Alt',
       numpad: 'Numpad', symbols: 'Symbols' },
     none: 'None', unbound: 'not mapped',
+    noSel: 'No key selected', noSelHint: 'Click the key you want to change in the picture. Esc clears the selection.',
+    layer0: 'Normal', layer1: 'Double tap', layer2: 'Thumb layer', noDouble: 'Off', sameKey: 'Normal',
+    layer1Hint: 'Tapping twice quickly (within 0.25 s) sends this key. The first tap sends the normal key at once – e.g. 1 = slot 1, double = slot 5.',
+    layer2Hint: 'While the thumb key is held, the finger keys send this mapping. "Normal" = the key stays as usual.',
+    thumbLayer: 'Thumb key as layer switch', thumbLayerSub: 'A short tap still sends the normal thumb key (on release), holding it switches to this layer.',
+    layerOff: 'This key has no mapping in this layer.',
+    needFw16: 'Double tap and thumb layer need firmware 1.6.',
     saving: 'Saving…', saved: 'Saved – stays on the keypad when unplugged', saveFailed: 'Saving failed',
     restored: 'Default mapping restored',
     thresh: (v) => `Stick trigger point: ${v} % travel`,
@@ -487,6 +815,20 @@ const STR = {
     backupDone: 'Settings saved to a file', restoreDone: 'Backup applied',
     restoreFailed: 'That file does not match the JS-Keypad',
     test: 'Key test', testStop: 'End test',
+    tabSettings: 'Settings', setGrpSwitch: 'Profile switching', setGrpApp: 'App', setGrpGeneral: 'General', setGrpAbout: 'About',
+    setAuto: 'Switch automatically',
+    setAutoSub: 'Changes the profile as soon as a program with its own profile is in front, and back to the default mapping.',
+    setNotify: 'Notify when switching', setNotifySub: 'Short Windows notification with the name of the new profile.',
+    setAutostart: 'Start with Windows', setAutostartSub: 'Starts hidden in the notification area at sign-in, so profiles switch right away.',
+    setOnlyApp: 'Only in the Windows app',
+    setOnlyAppSub: 'Automatic switching and autostart come with the "JS-Keypad Profile" app. This page in the browser edits keys and profiles only.',
+    setLang: 'Language', setLangSub: 'Language of the interface.',
+    setGrpGesture: 'Stick while plugging in', gestUp: 'Stick up', gestDown: 'Stick down',
+    gestLeft: 'Stick left', gestRight: 'Stick right', gestKeep: 'Keep mode',
+    gestNeed: 'Connect the keypad', gestNeedSub: 'The gestures are stored on the keypad – shown once it is connected (firmware 1.6+).',
+    gestHint: 'Holding the stick in a direction while plugging in picks the mode without a PC. A short click while plugging in cycles through the modes, holding it 3 s starts the bootloader.',
+    setVer: (have, latest) => `Firmware on the keypad: ${have || '–'} · Latest firmware: ${latest || '–'}`,
+    learnWhere: 'Learning and the key test run on the "Keys" page – the layout there shows which key is next.',
     learn: 'Learn wiring', learnSkip: 'Skip', learnCancel: 'Cancel',
     learnStep: (n, total, name) => `Key ${n} of ${total}: press “${name}” on the keypad now (marked in the picture).`,
     learnDup: (pin, name) => `Pin ${pin} is already assigned to “${name}” – press the marked key or “Skip”.`,
@@ -509,7 +851,7 @@ const STR = {
       NumpadAdd: ['Numpad +', 'Num +'], NumpadEnter: ['Numpad Enter', 'Num ⏎'], NumpadDecimal: ['Numpad .', 'Num .'],
       Numpad: (d) => [`Numpad ${d}`, `Num ${d}`],
     },
-    hMode: 'Stick mode', modeHint: 'The 13 keys are always keyboard keys; the mode only affects the stick. Switch without a PC: while plugging in hold the stick (up = keyboard, right = controller, down = mouse) or tap the click to cycle through the modes. Switching restarts the keypad – reconnect afterwards.',
+    hMode: 'Stick mode', modeHint: 'The 13 keys are always keyboard keys; the mode only affects the stick. Switch without a PC: while plugging in hold the stick in a direction (which direction picks which mode is set under "Settings") or tap the click to cycle through the modes. Switching restarts the keypad – reconnect afterwards.',
     modeGamepad: 'Controller', modeKeyboard: 'Keyboard', modeMouse: 'Mouse', modeUnknown: 'unknown',
     modeNow: (m) => `Active mode: ${m}`,
     speed: (v) => `Mouse speed: ${v} of 20`,
@@ -729,9 +1071,14 @@ function buildPad() {
 
 // ---- State ----
 let keys = [...DEFAULT_KEYS], threshold = 50;
-let selected = 0, capturing = false, category = 'letters';
+let selected = -1, capturing = false, category = 'letters';   // -1 = no key chosen: nothing can be changed by accident
 let pressed = new Array(NUM_SLOTS).fill(false);
 let testing = false, tested = new Set();
+// Extras (firmware 1.6+): 1 = double tap (13 keys), 2 = thumb layer (12 finger keys, thumb = trigger)
+let layer = 0, hasExtras = false, doubles = new Array(13).fill(0), layerKeys = new Array(12).fill(0), thumbLayer = false;
+let standardExtras = null;
+const inLayer = (slot) => layer === 0 || (layer === 1 ? slot < 13 : slot < 12);
+const binding = (slot) => (layer === 1 ? doubles[slot] : layer === 2 ? layerKeys[slot] : keys[slot]);
 let isKeypad = false;
 
 function slotName(slot) {
@@ -748,12 +1095,17 @@ function render() {
     if (stickLocked(slot)) {
       text = slot === SLOT_CLICK ? t('clickShort')[mode] : t('lockedShort')[mode];
       g.classList.add('locked'); g.classList.remove('unbound');
+    } else if (!inLayer(slot)) {
+      text = layer === 2 && slot === THUMB ? '⇧' : '';
+      g.classList.remove('locked', 'unbound');
     } else {
-      text = keyLabel(keys[slot])[1];
+      const usage = binding(slot);
+      text = usage || layer === 0 ? keyLabel(usage)[1] : (layer === 2 ? keyLabel(keys[slot])[1] : '–');
       small = slot >= SLOT_UP || text.length > 4;
       g.classList.remove('locked');
-      g.classList.toggle('unbound', !keys[slot]);
+      g.classList.toggle('unbound', !usage);
     }
+    g.classList.toggle('off', !inLayer(slot));
     lbl.textContent = text;
     if (slot < SLOT_UP) lbl.classList.toggle('small', small);
     g.classList.toggle('sel', slot === selected);
@@ -763,6 +1115,7 @@ function render() {
     g.setAttribute('aria-pressed', slot === selected);
   });
   $('pad').classList.toggle('testing', testing);
+  $('pad').classList.toggle('layer1', layer === 1); $('pad').classList.toggle('layer2', layer === 2);
   $('pad').querySelectorAll('[data-finger]').forEach((f) => (f.textContent = t('fingers')[f.dataset.finger]));
   renderPanel();
   renderTest();
@@ -771,10 +1124,35 @@ function render() {
 
 function renderPanel() {
   const connected = port !== null && isKeypad;
+  const none = selected < 0;
+  $('capture').hidden = $('cats').hidden = $('choices').hidden = none;
+  $('panel').classList.toggle('nosel', none);
+  if (none) {
+    $('panelTitle').textContent = t('noSel');
+    $('panelPin').textContent = t('noSelHint');
+    $('current').textContent = '–';
+    $('layerSeg').hidden = !hasExtras;
+    $('layerSeg').querySelectorAll('button').forEach((b) => b.classList.toggle('on', Number(b.dataset.layer) === layer));
+    $('layerHint').hidden = layer === 0;
+    $('layerHint').textContent = layer ? t(layer === 1 ? 'layer1Hint' : 'layer2Hint') : '';
+    $('thumbRow').hidden = layer !== 2;
+    $('thumbLayer').checked = thumbLayer; $('thumbLayer').disabled = !connected;
+    $('thresh').disabled = !connected || (mode !== null && mode > 0);
+    $('threshLabel').textContent = t('thresh', threshold);
+    return;
+  }
   const locked = stickLocked(selected);
   $('panelTitle').textContent = slotName(selected);
   $('panelPin').textContent = selected < SLOT_UP ? t('pin', pinName(pinMap[selected])) : t('stickPinHint');
-  $('current').textContent = locked ? (selected === SLOT_CLICK ? t('clickShort')[mode] : t('lockedShort')[mode]) : keyLabel(keys[selected])[0];
+  const off = !inLayer(selected);
+  $('current').textContent = locked ? (selected === SLOT_CLICK ? t('clickShort')[mode] : t('lockedShort')[mode])
+    : off ? '–' : !binding(selected) && layer > 0 ? t(layer === 1 ? 'noDouble' : 'sameKey') : keyLabel(binding(selected))[0];
+  $('layerSeg').hidden = !hasExtras;
+  $('layerSeg').querySelectorAll('button').forEach((b) => b.classList.toggle('on', Number(b.dataset.layer) === layer));
+  $('layerHint').hidden = layer === 0;
+  $('layerHint').textContent = off ? t('layerOff') : layer ? t(layer === 1 ? 'layer1Hint' : 'layer2Hint') : '';
+  $('thumbRow').hidden = layer !== 2;
+  $('thumbLayer').checked = thumbLayer; $('thumbLayer').disabled = !connected;
   const cap = $('capture');
   if (!connected) { cap.textContent = t('needConnect'); cap.className = 'idle'; }
   else if (locked) { cap.textContent = t(mode === 1 ? 'lockedGamepad' : 'lockedMouse'); cap.className = 'idle'; }
@@ -789,15 +1167,15 @@ function renderPanel() {
     cats.append(b);
   }
   const choices = $('choices'); choices.replaceChildren();
-  const disabled = !connected || locked;
+  const disabled = !connected || locked || off || (layer === 2 && !thumbLayer);
   const mk = (usage, text, title) => {
     const b = document.createElement('button');
     b.textContent = text; b.title = title; b.disabled = disabled;
-    if (usage === keys[selected] && !locked) b.className = 'cur';
+    if (usage === binding(selected) && !locked && !off) b.className = 'cur';
     b.onclick = () => assign(usage);
     choices.append(b);
   };
-  mk(0, t('none'), t('unbound'));
+  mk(0, layer === 1 ? t('noDouble') : layer === 2 ? t('sameKey') : t('none'), t('unbound'));
   for (const k of KEYS.filter((k) => k.cat === category)) {
     const [long, short] = keyLabel(k.usage);
     mk(k.usage, short, long);
@@ -810,6 +1188,7 @@ function renderTest() {
   $('testBtn').textContent = t(testing ? 'testStop' : 'test');
   $('testBtn').className = testing ? 'on' : '';
   $('testBtn').disabled = !(port && isKeypad);
+  $('testEnd').hidden = !testing;
   const info = $('testInfo');
   info.hidden = !testing;
   if (!testing) return;
@@ -829,15 +1208,19 @@ function select(slot, arm = true) {
     return;
   }
   selected = slot;
-  capturing = arm && port !== null && isKeypad && !stickLocked(slot);
-  const k = byUsage.get(keys[slot]);
+  if (!inLayer(slot)) layer = 0;   // e.g. the stick: only in the normal layer
+  capturing = arm && port !== null && isKeypad && !stickLocked(slot) && !(layer === 2 && !thumbLayer);
+  const k = byUsage.get(binding(slot));
   if (k) category = k.cat;
   render();
 }
 
 $('capture').onclick = () => {
-  if (port && isKeypad && !stickLocked(selected)) { capturing = true; renderPanel(); }
+  if (selected >= 0 && port && isKeypad && !stickLocked(selected)) { capturing = true; renderPanel(); }
 };
+// Esc or a click on the empty background: deselect
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !learn) { selected = -1; capturing = false; pendingCapture = null; render(); } });
+$('pad').addEventListener('click', (e) => { if (!learn && !e.target.closest('.key')) { selected = -1; capturing = false; render(); } });
 
 // Capturing a key press from the PC keyboard. Committed after a short delay, so a press on the
 // keypad itself (which also types) is recognised from the live state and not taken as the choice,
@@ -862,12 +1245,35 @@ window.addEventListener('keydown', (e) => {
 }, true);
 
 async function assign(usage) {
-  if (!port || !isKeypad || stickLocked(selected)) return;
+  if (selected < 0 || !port || !isKeypad || stickLocked(selected) || !inLayer(selected)) return;
   capturing = false;
-  keys[selected] = usage;
+  if (layer === 0) { keys[selected] = usage; render(); return saveConfig(); }
+  if (layer === 1) doubles[selected] = usage; else layerKeys[selected] = usage;
   render();
-  await saveConfig();
+  await saveExtras();
 }
+
+// Double taps (DSET) and thumb layer (LSET) of the profile being edited
+async function saveExtras() {
+  setSaveState('saving');
+  const reply = layer === 1 ? await command(`DSET ${profIdx} ${doubles.join(' ')}`)
+    : await command(`LSET ${profIdx} ${thumbLayer ? 1 : 0} ${layerKeys.join(' ')}`);
+  const ex = profIdx === 0 ? standardExtras : profiles.find((x) => x.i === profIdx);
+  if (reply === 'OK' && ex) Object.assign(ex, { doubles: doubles.slice(), layerKeys: layerKeys.slice(), thumbLayer });
+  setSaveState(reply === 'OK' ? 'saved' : 'saveFailed', reply === 'OK' ? 'ok' : 'bad');
+}
+$('layerSeg').querySelectorAll('button').forEach((b) => {
+  b.onclick = () => {
+    layer = Number(b.dataset.layer); capturing = false;
+    if (selected >= 0 && !inLayer(selected)) selected = -1;
+    render();
+  };
+});
+$('thumbLayer').onchange = () => {
+  thumbLayer = $('thumbLayer').checked;
+  saveExtras();
+  render();
+};
 
 let saveMsg = null;
 function setSaveState(key, cls) {
@@ -876,13 +1282,279 @@ function setSaveState(key, cls) {
 }
 async function saveConfig() {
   setSaveState('saving');
-  const reply = await command(`SET ${keys.join(' ')} ${threshold}`);
+  let reply;
+  if (profIdx === 0) {
+    reply = await command(`SET ${keys.join(' ')} ${threshold}`);
+    if (reply === 'OK') { activeProf = 0; standardKeys = keys.slice(); standardThreshold = threshold; }
+  } else {
+    const prof = profiles.find((x) => x.i === profIdx);
+    prof.keys = keys.slice(); prof.threshold = threshold;
+    reply = await command(`PSET ${prof.i}|${prof.name}|${prof.exe}|${keys.join(' ')} ${threshold} ${prof.mode ?? 3}`);
+  }
   setSaveState(reply === 'OK' ? 'saved' : 'saveFailed', reply === 'OK' ? 'ok' : 'bad');
+  renderProfiles();
 }
+
+// ---- Profiles (firmware 1.4+): stored on the keypad, 0 = standard map ----
+const MAX_PROFILES = 8;
+let profiles = [], profIdx = 0, activeProf = 0, hasProfiles = false, hasModes = false, standardMode = 3, standardKeys = null, standardThreshold = 50;
+const cleanField = (v) => v.replace(/\|/g, '').trim();
+
+async function loadProfiles() {
+  const r = await command('PUSE');
+  hasProfiles = !!r && r.startsWith('PUSE ');
+  $('profBox').hidden = !hasProfiles;
+  profiles = [];
+  if (!hasProfiles) { profIdx = 0; return; }
+  activeProf = Number(r.slice(5));
+  const sm = await command('SMODE');   // firmware 1.5+: stick mode per profile
+  hasModes = !!sm && sm.startsWith('SMODE ');
+  standardMode = hasModes ? Number(sm.slice(6)) : 3;
+  const readExtras = async (i) => {   // firmware 1.6+: double taps + thumb layer
+    const d = await command('DGET ' + i), l = await command('LGET ' + i);
+    if (!d || !d.startsWith('DDAT ') || !l || !l.startsWith('LDAT ')) return null;
+    const dn = d.split(' ').slice(2).map(Number), ln = l.split(' ').slice(2).map(Number);
+    return { doubles: dn.slice(0, 13), thumbLayer: ln[0] === 1, layerKeys: ln.slice(1, 13) };
+  };
+  standardExtras = await readExtras(0);
+  hasExtras = !!standardExtras;
+  for (let i = 1; i <= MAX_PROFILES; i++) {
+    const d = await command('PGET ' + i);
+    if (!d || !d.startsWith('PDAT ')) continue;
+    const parts = d.slice(5).split('|');
+    const nums = (parts[3] || '').trim().split(' ').map(Number);
+    if (nums.length < NUM_SLOTS + 1) continue;
+    profiles.push({ i, name: parts[1], exe: parts[2], keys: nums.slice(0, NUM_SLOTS), threshold: nums[NUM_SLOTS],
+      mode: nums.length > NUM_SLOTS + 1 ? nums[NUM_SLOTS + 1] : 3, ...(hasExtras ? await readExtras(i) : {}) });
+  }
+  if (!profiles.some((x) => x.i === profIdx)) profIdx = 0;
+}
+function profileLabel(i) {
+  if (i === 0) return t('profStd');
+  const prof = profiles.find((x) => x.i === i);
+  return prof ? prof.name : '–';
+}
+
+document.body.dataset.tab = 'keys';
+const showTab = (name) => document.querySelector(`#tabs button[data-tab=${name}]`).click();
+if (document.querySelector(`#tabs button[data-tab="${location.hash.slice(1)}"]`)) setTimeout(() => showTab(location.hash.slice(1)));
+document.querySelectorAll('#tabs button').forEach((b) => {
+  b.onclick = () => {
+    document.body.dataset.tab = b.dataset.tab;
+    document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x === b));
+    $('setupBtn').classList.toggle('on', b.dataset.tab === 'setup');
+  };
+});
+let tabBeforeSetup = 'keys';
+let gestures = null;   // [up, down, left, right]: 0..2 mode, 3 = keep
+function renderGestures() {
+  const ok = !!gestures && port !== null && isKeypad;
+  $('gestNeed').hidden = ok;
+  $('gestCard').querySelectorAll('[data-dir]').forEach((row) => {
+    row.hidden = !ok;
+    const sel = row.querySelector('select');
+    sel.replaceChildren(...[0, 1, 2, 3].map((m) => {
+      const o = document.createElement('option');
+      o.value = m; o.textContent = m === 3 ? t('gestKeep') : t(['modeKeyboard', 'modeGamepad', 'modeMouse'][m]);
+      return o;
+    }));
+    if (ok) sel.value = gestures[row.dataset.dir];
+    sel.onchange = async () => {
+      gestures[row.dataset.dir] = Number(sel.value);
+      const reply = await command('GEST ' + gestures.join(' '));
+      setSaveState(reply === 'OK' ? 'saved' : 'saveFailed', reply === 'OK' ? 'ok' : 'bad');
+    };
+  });
+}
+$('setupBtn').onclick = () => {   // toggles: open the device setup, click again to go back
+  if (document.body.dataset.tab === 'setup') return showTab(tabBeforeSetup);
+  tabBeforeSetup = document.body.dataset.tab || 'keys';
+  showTab('setup');
+};
+
+function renderProfileList() {
+  const list = $('profList');
+  list.innerHTML = '';
+  [{ i: 0 }, ...profiles].forEach((x) => {
+    const b = document.createElement('button');
+    b.className = 'pitem' + (x.i === profIdx ? ' cur' : '');
+    const av = document.createElement('span'); av.className = 'pav';
+    const label = profileLabel(x.i);
+    av.textContent = x.i === 0 ? '★' : label.split(/[\s'’:-]+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+    let h = 0; for (const c of label) h = (h * 31 + c.charCodeAt(0)) % 360;
+    av.style.background = x.i === 0 ? 'var(--grad)' : `linear-gradient(135deg, hsl(${h} 70% 52%), hsl(${(h + 40) % 360} 70% 42%))`;
+    if (localApp && x.exe) {   // Windows app: the program's own icon instead of the initials
+      const img = document.createElement('img');
+      img.alt = ''; img.src = 'api/icon?exe=' + encodeURIComponent(x.exe);
+      img.onload = () => { av.textContent = ''; av.appendChild(img); av.classList.add('hasIcon'); };
+    }
+    b.appendChild(av);
+    const name = document.createElement('b'); name.textContent = label; b.appendChild(name);
+    const sub = document.createElement('small');
+    sub.textContent = x.i === 0 ? t('profStdSub') : (x.exe || t('profNoExe'));
+    b.appendChild(sub);
+    if (x.i === activeProf) { const badge = document.createElement('span'); badge.className = 'badge'; badge.textContent = '● ' + t('profBadge'); b.appendChild(badge); }
+    b.onclick = () => selectProfile(x.i);
+    list.appendChild(b);
+  });
+}
+
+function renderProfiles() {
+  $('profNeedFw').hidden = !(port && isKeypad && !hasProfiles);
+  if (!hasProfiles) return;
+  renderProfileList();
+  const sel = $('profSel');
+  sel.innerHTML = '';
+  [{ i: 0 }, ...profiles].forEach((x) => {
+    const o = document.createElement('option');   // el() builds SVG elements
+    o.value = x.i; sel.appendChild(o);
+    o.textContent = (x.i === activeProf ? '● ' : '') + profileLabel(x.i) + (x.exe ? ` (${x.exe})` : '');
+  });
+  sel.value = profIdx;
+  const connected = port !== null && isKeypad;
+  sel.disabled = !connected;
+  $('profNew').disabled = !connected || profiles.length >= MAX_PROFILES;
+  $('profUse').disabled = !connected || profIdx === activeProf;
+  $('profDel').disabled = !connected || profIdx === 0;
+  $('profEdit').hidden = profIdx === 0;
+  const prof = profiles.find((x) => x.i === profIdx);
+  $('profName').value = prof ? prof.name : '';
+  $('profExe').value = prof ? prof.exe : '';
+  $('profModeRow').hidden = !hasModes;
+  $('profMode').disabled = !connected;
+  $('profMode').value = String(prof ? prof.mode ?? 3 : standardMode);
+  $('profName').placeholder = t('profNamePh');
+  $('profExe').placeholder = t('profExePh');
+  $('profActive').textContent = t('profActive', profileLabel(activeProf));
+  $('defaults').textContent = t(profIdx === 0 ? 'defaults' : 'profDefaults');
+}
+
+function selectProfile(i) {
+  profIdx = i;
+  if (i === 0) {
+    if (standardKeys) { keys = standardKeys.slice(); threshold = standardThreshold; }
+  } else {
+    const prof = profiles.find((x) => x.i === i);
+    keys = prof.keys.slice(); threshold = prof.threshold;
+  }
+  const ex = (i === 0 ? standardExtras : profiles.find((x) => x.i === i)) || {};
+  doubles = (ex.doubles || new Array(13).fill(0)).slice();
+  layerKeys = (ex.layerKeys || new Array(12).fill(0)).slice();
+  thumbLayer = !!ex.thumbLayer;
+  $('thresh').value = threshold; $('threshLabel').textContent = t('thresh', threshold);
+  setSaveState(null);
+  selected = -1; capturing = false;
+  renderProfiles();
+  render();
+}
+
+$('profMode').onchange = async () => {
+  const mode = Number($('profMode').value);
+  const prof = profiles.find((x) => x.i === profIdx);
+  if (prof) { prof.mode = mode; return saveConfig(); }
+  const ok = (await command('SMODE ' + mode)) === 'OK';
+  if (ok) standardMode = mode;
+  setSaveState(ok ? 'saved' : 'saveFailed', ok ? 'ok' : 'bad');
+};
+$('profSel').onchange = () => selectProfile(Number($('profSel').value));
+$('profNew').onclick = async () => {
+  const used = new Set(profiles.map((x) => x.i));
+  let i = 1;
+  while (used.has(i) && i <= MAX_PROFILES) i++;
+  if (i > MAX_PROFILES) return alert(t('profFull'));
+  const name = t('profNewName', i);
+  const reply = await command(`PSET ${i}|${name}||${keys.join(' ')} ${threshold}`);
+  if (reply !== 'OK') return setSaveState('saveFailed', 'bad');
+  await loadProfiles();
+  selectProfile(i);
+  $('profName').focus(); $('profName').select();
+};
+$('profDel').onclick = async () => {
+  if (profIdx === 0 || !confirm(t('profDelConfirm', profileLabel(profIdx)))) return;
+  await command('PDEL ' + profIdx);
+  await loadProfiles();
+  const r = await command('PUSE');
+  if (r && r.startsWith('PUSE ')) activeProf = Number(r.slice(5));
+  selectProfile(0);
+};
+$('profUse').onclick = async () => {
+  if ((await command('PUSE ' + profIdx)) === 'OK') activeProf = profIdx;
+  renderProfiles();
+};
+// Local copy from the Windows app: while this window holds the serial port the app cannot reach the keypad, so the
+// page does the automatic switching itself. The app reports the foreground program (null = this window itself,
+// keep the current profile). The online page gets a 404 and stops asking.
+// Long poll: the request waits in the app until the foreground program changes. Edge throttles timers of a window
+// hidden behind a game (down to once a minute), network replies are not throttled - so the switch is immediate.
+let autoApi = true, autoBusyNow = false, fgSeq = -1, fgExe = null, fgAuto = false;
+async function autoSwitch() {
+  if (autoBusyNow || !fgAuto || fgExe === null || !port || !isKeypad || !hasProfiles || learn) return;
+  autoBusyNow = true;
+  try {
+    const want = (profiles.find((x) => x.exe && x.exe.toLowerCase() === fgExe.toLowerCase()) || { i: 0 }).i;
+    if (want !== activeProf && (await command('PUSE ' + want)) === 'OK') {
+      activeProf = want;
+      renderProfiles();
+      fetch('api/switched?name=' + encodeURIComponent(profileLabel(want)), { cache: 'no-store' }).catch(() => {});
+    }
+  } finally { autoBusyNow = false; }
+}
+async function watchForeground() {
+  while (autoApi) {
+    try {
+      const r = await fetch('api/foreground?seq=' + fgSeq, { cache: 'no-store' });
+      if (r.status === 404) { autoApi = false; break; }   // online mapper: no Windows app behind it
+      if (!r.ok) throw new Error(r.status);
+      ({ seq: fgSeq, exe: fgExe, auto: fgAuto } = await r.json());
+      autoSwitch();
+    } catch { await new Promise((ok) => setTimeout(ok, 2000)); }   // app not reachable right now
+  }
+}
+watchForeground();
+
+// Settings of the Windows app (same as its tray menu); the online page gets a 404 and keeps the box hidden
+$('setApp').hidden = true;
+let localApp = false;
+function showAppSettings(st) {
+  if (!localApp) { localApp = true; if (hasProfiles) renderProfileList(); }
+  $('setApp').hidden = false; $('setOnline').hidden = true;
+  $('setAuto').checked = st.auto; $('setNotify').checked = st.notify; $('setAutostart').checked = st.autostart;
+}
+async function appSettings(query = '') {
+  try {
+    const r = await fetch('api/settings' + query, { cache: 'no-store' });
+    if (r.ok) showAppSettings(await r.json());
+  } catch { /* online mapper */ }
+}
+[['setAuto', 'auto'], ['setNotify', 'notify'], ['setAutostart', 'autostart']].forEach(([id, key]) => {
+  $(id).onchange = () => appSettings(`?${key}=${$(id).checked ? 1 : 0}`);
+});
+appSettings();
+window.addEventListener('focus', () => appSettings());   // the tray menu may have changed them
+setInterval(autoSwitch, 1000);   // after connecting / editing profiles (no fetch, cheap)
+
+// Local copy from the Windows app: it can list running programs (the online page cannot, 404 is ignored)
+$('profExe').onfocus = async () => {
+  try {
+    const r = await fetch('api/programs', { cache: 'no-store' });
+    if (!r.ok) return;
+    const list = $('progList');
+    list.innerHTML = '';
+    for (const name of await r.json()) { const o = document.createElement('option'); o.value = name; list.appendChild(o); }
+  } catch { /* online mapper: no list */ }
+};
+$('profName').onchange = $('profExe').onchange = () => {
+  const prof = profiles.find((x) => x.i === profIdx);
+  if (!prof) return;
+  prof.name = cleanField($('profName').value) || prof.name;
+  prof.exe = cleanField($('profExe').value);
+  saveConfig();
+};
 
 $('thresh').oninput = () => { threshold = Number($('thresh').value); $('threshLabel').textContent = t('thresh', threshold); };
 $('thresh').onchange = () => saveConfig();
-$('testBtn').onclick = () => { testing = !testing; tested.clear(); render(); };
+$('testEnd').onclick = () => { testing = false; render(); };
+$('testBtn').onclick = () => { testing = !testing; tested.clear(); if (testing) showTab('keys'); render(); };
 
 // ---- Serial connection ----
 const FILTERS = [{ usbVendorId: 0x1209 }, { usbVendorId: 0x2341 }, { usbVendorId: 0x1B4F }];
@@ -925,11 +1597,16 @@ async function readLoop() {
   if (port) disconnect('connLost');
 }
 
-async function connect() {
-  if (!('serial' in navigator)) return;
+const isJsKeypadPort = (p) => p.getInfo().usbVendorId === 0x1209 && p.getInfo().usbProductId === 0x0003;
+let connecting = false;
+
+// auto: a port the browser already has permission for (plugged in / page opened) - no chooser, quiet on failure
+async function connect(auto = null) {
+  if (!('serial' in navigator) || port || connecting) return;
+  connecting = true;
   try {
-    const known = (await navigator.serial.getPorts()).filter((p) => p.getInfo().usbVendorId === 0x1209 && p.getInfo().usbProductId === 0x0003);
-    const target = known.length === 1 ? known[0] : await navigator.serial.requestPort({ filters: FILTERS });
+    const known = (await navigator.serial.getPorts()).filter(isJsKeypadPort);
+    const target = auto || (known.length === 1 ? known[0] : await navigator.serial.requestPort({ filters: FILTERS }));
     await target.open({ baudRate: 115200 });
     await target.setSignals({ dataTerminalReady: true });
     port = target; reader = port.readable.getReader(); writer = port.writable.getWriter(); rxBuffer = '';
@@ -943,9 +1620,22 @@ async function connect() {
     if (isKeypad) pollTimer = setInterval(poll, 120);
   } catch (e) {
     await disconnect();
-    if (e.name !== 'NotFoundError') setStatus('connectFailed', false, e.message);
+    if (auto) setStatus('autoBusy', false);   // e.g. the Windows profile app is switching right now - retried below
+    else if (e.name !== 'NotFoundError') setStatus('connectFailed', false, e.message);
+    if (auto) setTimeout(autoConnect, 2500);
+  } finally {
+    connecting = false;
   }
 }
+
+// Connect by itself: when the page opens with a known keypad plugged in, and whenever one is plugged in
+async function autoConnect() {
+  if (!('serial' in navigator) || port) return;
+  const known = (await navigator.serial.getPorts()).filter(isJsKeypadPort);
+  if (known.length) connect(known[0]);
+}
+navigator.serial?.addEventListener('connect', (e) => { if (!port && isJsKeypadPort(e.target)) setTimeout(() => connect(e.target), 600); });
+setTimeout(autoConnect, 300);
 
 async function disconnect(key) {
   clearInterval(pollTimer); pollTimer = null;
@@ -957,6 +1647,7 @@ async function disconnect(key) {
   try { p && await p.close(); } catch {}
   if (waiting) waiting(null);
   isKeypad = false; capturing = false; testing = false; learn = null;
+  hasProfiles = hasModes = hasExtras = false; layer = 0; profiles = []; gestures = null; renderGestures(); profIdx = 0; $('profBox').hidden = true;
   pressed.fill(false);
   $('stickDot')?.setAttribute('visibility', 'hidden');
   setStatus(key || 'notConnected', false);
@@ -974,7 +1665,14 @@ async function loadConfig() {
   if (cfg[0] === 'CFG' && cfg.length >= NUM_SLOTS + 2) {
     keys = cfg.slice(1, NUM_SLOTS + 1).map(Number);
     threshold = Number(cfg[NUM_SLOTS + 1]); $('thresh').value = threshold;
+    standardKeys = keys.slice(); standardThreshold = threshold;
   }
+  await loadProfiles();
+  if (profIdx !== 0) {
+    const prof = profiles.find((x) => x.i === profIdx);
+    keys = prof.keys.slice(); threshold = prof.threshold; $('thresh').value = threshold;
+  }
+  renderProfiles();
   const pm = await command('PINS');
   hasPinMap = !!pm && pm.startsWith('PINS ');
   if (hasPinMap) pinMap = pm.slice(5).trim().split(' ').map(Number);
@@ -990,9 +1688,13 @@ async function loadConfig() {
   if (rot && rot.startsWith('ROT ')) { $('rot').value = rot.slice(4); updateRotLabel(); }
   const spd = await command('SPD');
   if (spd && spd.startsWith('SPD ')) $('speed').value = spd.slice(4);
+  const g = await command('GEST');   // firmware 1.6+: plug-in gestures
+  gestures = g && g.startsWith('GEST ') ? g.slice(5).split(' ').map(Number) : null;
+  renderGestures();
   const m = await command('MODE');
   showMode(m && m.startsWith('MODE ') ? Number(m.slice(5)) : null);
-  select(selected);
+  selected = -1; capturing = false;
+  render();
 }
 
 function showMode(m) {
@@ -1043,12 +1745,15 @@ async function poll() {
     pressed[i] = on;
     if (on && testing && i < NUM_KEYS) tested.add(i);
   }
-  // Pressing a key on the keypad only selects it, and drops a capture its own keystroke started.
-  if (newlyPressed >= 0) lastKeypadPress = Date.now();
-  if (newlyPressed >= 0 && !testing) {
+  // Pressing a key on the keypad lights it up briefly (no selection), and drops a capture its own keystroke started.
+  if (newlyPressed >= 0) {
+    lastKeypadPress = Date.now();
     pendingCapture = null;
-    select(newlyPressed, false);
-  } else if (changed) render();
+    const g = keyEls[newlyPressed].g;
+    g.classList.remove('flash'); void g.getBBox(); g.classList.add('flash');
+    setTimeout(() => g.classList.remove('flash'), 650);
+  }
+  if (changed) render();
 }
 
 $('connect').onclick = () => (port ? disconnect() : connect());
@@ -1064,6 +1769,13 @@ $('rot').onchange = () => command('ROT ' + $('rot').value);
 $('rotReset').onclick = () => { $('rot').value = 0; updateRotLabel(); command('ROT 0'); };
 
 $('defaults').onclick = async () => {
+  if (profIdx !== 0) {
+    if (!confirm(t('profDefaultsConfirm')) || !standardKeys) return;
+    keys = standardKeys.slice(); threshold = standardThreshold;
+    $('thresh').value = threshold;
+    capturing = false; render();
+    return saveConfig();
+  }
   if (!confirm(t('defaultsConfirm'))) return;
   await command('RESETKEYS');
   await loadConfig();
@@ -1145,7 +1857,7 @@ function cancelLearn() {
   learn = null; renderLearn(); render();
   if (port && isKeypad && !pollTimer) pollTimer = setInterval(poll, 120);
 }
-$('learnBtn').onclick = startLearn;
+$('learnBtn').onclick = () => { showTab('keys'); startLearn(); };
 $('learnSkip').onclick = () => { if (learn) { learn.note = ''; learn.waitRelease = false; nextLearn(); } };
 $('learnCancel').onclick = cancelLearn;
 $('stickOn').onchange = () => command('STICK ' + ($('stickOn').checked ? 1 : 0));
@@ -1156,11 +1868,16 @@ $('backup').onclick = async () => {
   const rot = await command('ROT');
   const spd = await command('SPD');
   const data = {
-    jsKeypad: 1, version: deviceVersion, keys, threshold, pins: hasPinMap ? pinMap : undefined,
+    jsKeypad: 1, version: deviceVersion, keys: standardKeys || keys, threshold: standardKeys ? standardThreshold : threshold,
+    pins: hasPinMap ? pinMap : undefined,
     stick: $('stickOn').disabled ? undefined : ($('stickOn').checked ? 1 : 0),
     invert: $('invX').disabled ? undefined : (($('invX').checked ? 1 : 0) | ($('invY').checked ? 2 : 0)),
     rotation: rot && rot.startsWith('ROT ') ? Number(rot.slice(4)) : 0,
     mouseSpeed: spd && spd.startsWith('SPD ') ? Number(spd.slice(4)) : 8, mode,
+    profiles: hasProfiles ? profiles.map(({ i, name, exe, keys: k, threshold: th, mode: m, doubles: d, layerKeys: lk, thumbLayer: tl }) =>
+      ({ i, name, exe, keys: k, threshold: th, mode: m, doubles: d, layerKeys: lk, thumbLayer: tl })) : undefined,
+    standardExtras: hasExtras ? standardExtras : undefined,
+    standardMode: hasModes ? standardMode : undefined,
   };
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
@@ -1185,6 +1902,23 @@ $('restoreFile').onchange = async (e) => {
   if (hasPinMap && Array.isArray(data.pins) && data.pins.length === NUM_KEYS) await command('PINS ' + data.pins.join(' '));
   if (data.stick === 0 || data.stick === 1) await command('STICK ' + data.stick);
   if ([0, 1, 2, 3].includes(data.invert)) await command('INV ' + data.invert);
+  if (hasProfiles && Array.isArray(data.profiles)) {
+    for (const x of data.profiles) {
+      if (!(x.i >= 1 && x.i <= MAX_PROFILES) || !Array.isArray(x.keys) || x.keys.length !== NUM_SLOTS) continue;
+      await command(`PSET ${x.i}|${cleanField(String(x.name || ''))}|${cleanField(String(x.exe || ''))}|${x.keys.join(' ')} ${x.threshold} ${[0, 1, 2, 3].includes(x.mode) ? x.mode : 3}`);
+    }
+    if ([0, 1, 2, 3].includes(data.standardMode)) await command('SMODE ' + data.standardMode);
+    if (hasExtras) {
+      const putExtras = async (i, x) => {
+        if (!x) return;
+        if (Array.isArray(x.doubles) && x.doubles.length === 13) await command(`DSET ${i} ${x.doubles.join(' ')}`);
+        if (Array.isArray(x.layerKeys) && x.layerKeys.length === 12) await command(`LSET ${i} ${x.thumbLayer ? 1 : 0} ${x.layerKeys.join(' ')}`);
+      };
+      await putExtras(0, data.standardExtras);
+      for (const x of data.profiles) if (x.i >= 1 && x.i <= MAX_PROFILES) await putExtras(x.i, x);
+    }
+  }
+  profIdx = 0;
   await loadConfig();
   setSaveState('restoreDone', 'ok');
 };
@@ -1197,6 +1931,7 @@ fetch('firmware-version.txt', { cache: 'no-store' })
   .catch(() => {});
 
 function showVersions() {
+  $('setVersions').textContent = t('setVer', deviceVersion, latestVersion);
   const box = $('fwVersions');
   if (!port) { box.textContent = ''; box.className = 'hint'; return; }
   if (!deviceVersion) { box.textContent = t('verUnknown'); box.className = 'hint bad'; return; }
@@ -1452,6 +2187,8 @@ async function flashFirmware(pickPort) {
 function applyLanguage() {
   document.documentElement.lang = lang;
   $('langBtn').textContent = lang === 'de' ? 'EN' : 'DE';
+  document.querySelectorAll('#langSeg button').forEach((b) => b.classList.toggle('on', b.dataset.lang === lang));
+  $('setVersions').textContent = t('setVer', deviceVersion, latestVersion);
   document.querySelectorAll('[data-i18n]').forEach((e) => {
     if (e instanceof SVGElement) e.textContent = t(e.dataset.i18n); else e.innerHTML = t(e.dataset.i18n);
   });
@@ -1465,12 +2202,16 @@ function applyLanguage() {
   if (fwMsg) fwStatus(...fwMsg);
   if (diagContinue === null && !$('diagResult').children.length) $('diagStep').textContent = t('diagIntro');
   showMode(mode);
+  renderProfiles();
+  renderGestures();
 }
-$('langBtn').onclick = () => {
-  lang = lang === 'de' ? 'en' : 'de';
+function setLanguage(l) {
+  lang = l;
   try { localStorage.setItem('jsKeypadLang', lang); } catch {}
   applyLanguage();
-};
+}
+$('langBtn').onclick = () => setLanguage(lang === 'de' ? 'en' : 'de');
+document.querySelectorAll('#langSeg button').forEach((b) => { b.onclick = () => setLanguage(b.dataset.lang); });
 
 buildPad();
 if (!('serial' in navigator)) {

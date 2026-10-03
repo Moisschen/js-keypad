@@ -1,1 +1,7 @@
 build/
+
+# Windows-App Build
+app/build/
+app/dist/
+app/*.spec
+app/screenshots/

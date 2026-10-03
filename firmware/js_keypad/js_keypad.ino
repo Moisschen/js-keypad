@@ -17,6 +17,12 @@
 // binding means the same physical key on every keyboard layout (QWERTZ, AZERTY, ...).
 
 const int ModeEepromAddress = 96;  // after the KeyMap
+const int BootProfileEepromAddress = 97;  // one-shot: profile to activate after a mode-change reboot (0 = none)
+const int StandardModeEepromAddress = 127;
+// Plug-in gestures: mode chosen by holding the stick up/down/left/right while plugging in (0..2, 3 = keep the mode).
+// 0xFF from a fresh EEPROM = the default for that direction.
+const int GestureEepromAddress = 118;  // 4 bytes: up, down, left, right (the pin map ends at 116)
+const uint8_t DefaultGestures[4] = { 0, 2, 3, 1 };  // up keyboard, down mouse, left keep, right gamepad  // mode of the standard map, ModeKeep (or 0xFF fresh) = leave as is
 const int RotationEepromAddress = 98;  // int8 degrees, -90..90 (0xFF from a fresh EEPROM reads as -1, so a magic byte guards it)
 const int RotationMagicEepromAddress = 99;
 const uint8_t RotationMagic = 0xA5;
@@ -26,13 +32,36 @@ const int AxisInvertEepromAddress = 102;    // bit 0 = flip left/right, bit 1 = 
 const int PinMapMagicEepromAddress = 103;   // PinMapMagic when a learned pin map follows
 const int PinMapEepromAddress = 104;        // NumKeys bytes: Arduino pin of each key slot
 const uint8_t PinMapMagic = 0x5A;
+// Profiles 1..MaxProfiles (profile 0 = the standard key map at KeyMapEepromAddress). Kept on the keypad, so the
+// web mapper and the Windows profile app edit the same set. Switching (PUSE) only changes RAM: no EEPROM wear,
+// and after plugging in the standard map is active again.
+const int ProfileEepromAddress = 128;
+const int MaxProfiles = 8;
+const uint8_t ProfileMagic = 0xB1;
+const int ProfileNameLength = 16;  // incl. terminating zero
+const int ProfileExeLength = 48;  // incl. zero - FortniteClient-Win64-Shipping.exe alone has 33
+// Extras per profile, kept apart from the profiles (which keeps their layout). Fresh EEPROM (0xFF) = none / off.
+// - Double tap: a second press of a key within DoubleTapMillis types its second key instead. The first press always
+//   types at once (no waiting), e.g. key 1 = slot 1, tapped twice = slot 5.
+// - Thumb layer: with it on, the thumb key types nothing and, while held, the finger keys type their layer key
+//   (0 there = the normal key).
+// Block: NumKeys double codes, NumFingerKeys layer codes, 1 = layer on. Standard map in the free space after the
+// calibration, profiles 1..8 after the profiles (128 + 8 * 85 = 808).
+const int NumFingerKeys = 12;
+const int ExtrasSize = 13 + NumFingerKeys + 1;
+const int StandardExtrasEepromAddress = 32;
+const int ProfileExtrasEepromAddress = 808;
+const unsigned long DoubleTapMillis = 250;
+const unsigned long ThumbTapMillis = 400;  // thumb layer on: a tap this short without a layer key types the thumb key
+const unsigned long ThumbTapHoldMillis = 60;  // how long that tap is held, so games (polling once a frame) see it
 const uint8_t ModeKeyboard = 0;
 const uint8_t ModeGamepad = 1;
 const uint8_t ModeMouse = 2;
+const uint8_t ModeKeep = 3;  // profile does not change the mode
 const uint8_t GamepadReportId = 3;  // 1 and 2 are taken by Mouse/Keyboard
 const uint8_t MouseReportId = 4;
 const uint8_t DefaultMouseSpeed = 8;
-const char FirmwareVersion[] = "1.3";  // bump on every release; the web mapper compares it with docs/firmware-version.txt
+const char FirmwareVersion[] = "1.8";  // bump on every release; the web mapper compares it with docs/firmware-version.txt
 uint8_t mouseSpeed = DefaultMouseSpeed;  // pixels per 8 ms at full deflection
 
 static const uint8_t GamepadDescriptor[] PROGMEM = {
@@ -161,6 +190,21 @@ struct KeyMap {
   uint8_t thresholdPercent;  // stick travel needed to press a direction key
 };
 
+// One profile in EEPROM (85 bytes). Defined up here: the Arduino builder puts function prototypes above
+// the first function, and keyMapOf()/readProfile() take a Profile.
+struct Profile {
+  uint8_t magic;
+  char name[ProfileNameLength];
+  char exe[ProfileExeLength];  // process that activates it, e.g. FortniteClient-Win64-Shipping.exe
+  uint8_t keys[NumSlots];
+  uint8_t thresholdPercent;
+  uint8_t mode;  // ModeKeyboard/Gamepad/Mouse: switching to the profile reboots into it, ModeKeep = no change
+};
+static_assert(ProfileEepromAddress + MaxProfiles * (int)sizeof(Profile) <= ProfileExtrasEepromAddress, "profiles overlap extras");
+static_assert(ProfileExtrasEepromAddress + MaxProfiles * ExtrasSize <= 1024, "extras do not fit the EEPROM");
+static_assert(CalibrationEepromAddress + (int)sizeof(Calibration) <= StandardExtrasEepromAddress, "calibration overlaps extras");
+static_assert(StandardExtrasEepromAddress + ExtrasSize <= KeyMapEepromAddress, "extras overlap the key map");
+
 const KeyMap DefaultKeyMap = { KeyMapMagicNumber, {
   0x21, 0x20, 0x1F, 0x1E,  // 4 3 2 1
   0x15, 0x08, 0x14, 0x2B,  // R E Q Tab
@@ -204,7 +248,19 @@ void disableWatchdogAtBoot() {
 }
 
 KeyMap keyMap;
+uint8_t activeProfile = 0;  // 0 = standard map
+
+
 boolean slotPressed[NumSlots];
+uint8_t doubleKeys[NumKeys];            // double-tap codes of the active profile, 0 = none
+uint8_t layerKeys[12];                  // thumb-layer codes of the active profile, 0 = normal key
+boolean thumbLayerOn = false;           // thumb key is the layer trigger
+unsigned long thumbDownMillis = 0;      // when the trigger went down
+boolean thumbLayerUsed = false;         // a finger key was pressed while it was held
+uint8_t thumbTapCode = 0;               // tap being typed after release, 0 = none
+unsigned long thumbTapStartMillis = 0;
+uint8_t slotCode[NumSlots];             // code typed by the current press, released with exactly that one
+unsigned long lastTapMillis[NumKeys];   // previous press, 0 = the next press is a first tap
 boolean keyStable[NumKeys];  // debounced key state, true = pressed
 unsigned long keyChangeMillis[NumKeys];
 
@@ -272,6 +328,11 @@ void handleClickAtBoot() {
 
 static void rebootIntoMode(uint8_t mode, boolean replyOverSerial);
 
+static uint8_t gestureMode(int direction) {
+  uint8_t mode = EEPROM.read(GestureEepromAddress + direction);
+  return mode == 0xFF ? DefaultGestures[direction] : (mode > ModeKeep ? ModeKeep : mode);
+}
+
 // Plugging in with the stick held selects the mode without the mapper: up = keyboard,
 // right = gamepad, down = mouse. A short click while plugging in cycles through the three.
 static void applyPlugInModeChoice() {
@@ -299,12 +360,23 @@ static void applyPlugInModeChoice() {
   const long MinTravel = 60;  // fallback for an uncalibrated stick
   long thresholdX = max(travelX / 2, MinTravel);
   long thresholdY = max(travelY / 2, MinTravel);
+  int direction = -1;  // 0 up, 1 down, 2 left, 3 right
+  if (abs(dy) > abs(dx)) {
+    if (dy > thresholdY) direction = 0;
+    else if (-dy > thresholdY) direction = 1;
+  } else {
+    if (-dx > thresholdX) direction = 2;
+    else if (dx > thresholdX) direction = 3;
+  }
   uint8_t wanted;
-  if (dy > thresholdY && abs(dy) > abs(dx)) wanted = ModeKeyboard;
-  else if (-dy > thresholdY && abs(dy) > abs(dx)) wanted = ModeMouse;
-  else if (dx > thresholdX) wanted = ModeGamepad;
-  else if (shortClickAtBoot) wanted = (gamepadRegistrar.mode + 1) % 3;  // short click cycles the modes
-  else return;  // stick resting or pushed left: keep the saved mode
+  if (direction >= 0) {
+    wanted = gestureMode(direction);
+    if (wanted > ModeMouse) return;  // this direction keeps the saved mode
+  } else if (shortClickAtBoot) {
+    wanted = (gamepadRegistrar.mode + 1) % 3;  // short click cycles the modes
+  } else {
+    return;  // stick resting: keep the saved mode
+  }
 
   if (wanted != gamepadRegistrar.mode) rebootIntoMode(wanted, false);
 }
@@ -337,6 +409,14 @@ void setup() {
   }
 
   applyPlugInModeChoice();
+  loadDoubles(0);
+
+  // A profile with its own mode was chosen: the board rebooted into that mode, now activate the profile.
+  uint8_t bootProfile = EEPROM.read(BootProfileEepromAddress);
+  if (bootProfile != 0) {
+    EEPROM.update(BootProfileEepromAddress, 0);
+    useProfile(bootProfile);
+  }
 
   Serial.begin(115200);
   Keyboard.begin();
@@ -388,21 +468,55 @@ static void setSlotPressed(int slot, boolean pressed) {
     return;
   }
   slotPressed[slot] = pressed;
-  uint8_t code = keyboardCode(keyMap.keys[slot]);
-  if (code == 0) {
-    return;  // unbound: still shown pressed in the mapper, but types nothing
+  if (thumbLayerOn && slot == NumFingerKeys) {
+    // The trigger: held = layer, a short tap on its own types the thumb key after release
+    if (pressed) {
+      thumbDownMillis = millis();
+      thumbLayerUsed = false;
+    } else if (!thumbLayerUsed && millis() - thumbDownMillis <= ThumbTapMillis && thumbTapCode == 0) {
+      thumbTapCode = keyboardCode(keyMap.keys[slot]);
+      if (thumbTapCode != 0) {
+        Keyboard.press(thumbTapCode);
+        thumbTapStartMillis = millis();
+      }
+    }
+    return;
   }
-  if (pressed) {
-    Keyboard.press(code);
-  } else {
-    Keyboard.release(code);
+  if (!pressed) {
+    if (slotCode[slot] != 0) Keyboard.release(slotCode[slot]);
+    slotCode[slot] = 0;
+    return;
   }
+  uint8_t usage = keyMap.keys[slot];
+  if (thumbLayerOn && slot < NumFingerKeys && slotPressed[NumFingerKeys]) {
+    if (layerKeys[slot] != 0) {
+      usage = layerKeys[slot];
+      thumbLayerUsed = true;  // only a real layer key cancels the tap, a finger key rolled over keeps it
+    }
+  } else if (slot < NumKeys && doubleKeys[slot] != 0) {
+    unsigned long now = millis();
+    if (lastTapMillis[slot] != 0 && now - lastTapMillis[slot] <= DoubleTapMillis) {
+      usage = doubleKeys[slot];
+      lastTapMillis[slot] = 0;  // a third tap starts over
+    } else {
+      lastTapMillis[slot] = now ? now : 1;
+    }
+  }
+  slotCode[slot] = keyboardCode(usage);
+  if (slotCode[slot] != 0) Keyboard.press(slotCode[slot]);  // unbound: shown pressed in the mapper, types nothing
+}
+
+static void endThumbTap() {
+  if (thumbTapCode != 0) Keyboard.release(thumbTapCode);
+  thumbTapCode = 0;
 }
 
 static void releaseAllSlots() {
+  thumbLayerUsed = true;  // a release forced here is no tap
   for (int slot = 0; slot < NumSlots; slot++) {
     setSlotPressed(slot, false);
   }
+  endThumbTap();
 }
 
 // Press acts at once; a change within KeyLockoutMillis of the last one is contact bounce.
@@ -415,6 +529,8 @@ static void updateKeys(unsigned long now) {
     }
     setSlotPressed(key, keyStable[key]);
   }
+  // millis(), not the tick's `now`: the tap started later in this very tick, now - start would wrap around
+  if (thumbTapCode != 0 && millis() - thumbTapStartMillis >= ThumbTapHoldMillis) endThumbTap();
 }
 
 // Presses above the threshold, releases only once back below threshold minus hysteresis.
@@ -618,20 +734,277 @@ static void applyOutputs(const Outputs& outputs, const State& state, const Input
 //   BTN <1..20>                  -> OK | ERR    (gamepad mode: taps button 1..16 or pushes the
 //                                                stick left/right/up/down (17..20) for 400 ms)
 
+static KeyMap storedStandardKeyMap();  // defined with the profiles below
+
 static void printKeyMap() {
+  KeyMap standard = activeProfile == 0 ? keyMap : storedStandardKeyMap();
   Serial.print(F("CFG"));
   for (int slot = 0; slot < NumSlots; slot++) {
     Serial.print(' ');
-    Serial.print(keyMap.keys[slot]);
+    Serial.print(standard.keys[slot]);
   }
   Serial.print(' ');
-  Serial.println(keyMap.thresholdPercent);
+  Serial.println(standard.thresholdPercent);
 }
 
 static void saveKeyMap(const KeyMap& newKeyMap) {
   releaseAllSlots();  // release with the old codes before they change
   keyMap = newKeyMap;
+  if (activeProfile != 0) loadDoubles(0);
+  activeProfile = 0;  // the standard map is what is active now
   EEPROM.put(KeyMapEepromAddress, keyMap);
+}
+
+// The standard map as stored (GET always reports this one, even while a profile is active).
+static KeyMap storedStandardKeyMap() {
+  KeyMap stored;
+  EEPROM.get(KeyMapEepromAddress, stored);
+  return isValidKeyMap(stored) ? stored : DefaultKeyMap;
+}
+
+// ---- Profiles ----
+
+static int profileAddress(int index) {
+  return ProfileEepromAddress + (index - 1) * (int)sizeof(Profile);
+}
+
+static boolean readProfile(int index, Profile& profile) {
+  if (index < 1 || index > MaxProfiles) return false;
+  EEPROM.get(profileAddress(index), profile);
+  profile.name[ProfileNameLength - 1] = 0;
+  profile.exe[ProfileExeLength - 1] = 0;
+  return profile.magic == ProfileMagic;
+}
+
+static KeyMap keyMapOf(const Profile& profile) {
+  KeyMap map;
+  map.magicNumber = KeyMapMagicNumber;
+  for (int slot = 0; slot < NumSlots; slot++) map.keys[slot] = profile.keys[slot];
+  map.thresholdPercent = profile.thresholdPercent;
+  return map;
+}
+
+static int extrasAddress(int index) {
+  return index == 0 ? StandardExtrasEepromAddress : ProfileExtrasEepromAddress + (index - 1) * ExtrasSize;
+}
+
+static uint8_t readCode(int address) {
+  uint8_t code = EEPROM.read(address);
+  return code == 0xFF ? 0 : code;
+}
+
+static void loadDoubles(int index) {
+  int address = extrasAddress(index);
+  for (int key = 0; key < NumKeys; key++) {
+    doubleKeys[key] = readCode(address + key);
+    lastTapMillis[key] = 0;
+  }
+  for (int key = 0; key < NumFingerKeys; key++) layerKeys[key] = readCode(address + NumKeys + key);
+  thumbLayerOn = EEPROM.read(address + NumKeys + NumFingerKeys) == 1;
+}
+
+static boolean useProfile(int index) {
+  KeyMap map;
+  if (index == 0) {
+    map = storedStandardKeyMap();
+  } else {
+    Profile profile;
+    if (!readProfile(index, profile)) return false;
+    map = keyMapOf(profile);
+    if (!isValidKeyMap(map)) return false;
+  }
+  releaseAllSlots();
+  keyMap = map;
+  activeProfile = (uint8_t)index;
+  loadDoubles(index);
+  return true;
+}
+
+static uint8_t profileMode(int index) {
+  if (index == 0) {
+    uint8_t mode = EEPROM.read(StandardModeEepromAddress);
+    return mode <= ModeMouse ? mode : ModeKeep;
+  }
+  Profile profile;
+  if (!readProfile(index, profile)) return ModeKeep;
+  return profile.mode <= ModeMouse ? profile.mode : ModeKeep;
+}
+
+// PUSE: profiles with a different stick mode need a reboot (USB descriptor), the profile follows after it.
+static void switchProfile(int index) {
+  Profile check;
+  if (index < 0 || index > MaxProfiles || (index > 0 && !readProfile(index, check))) {
+    Serial.println(F("ERR"));
+    return;
+  }
+  uint8_t mode = profileMode(index);
+  if (mode != ModeKeep && mode != gamepadRegistrar.mode) {
+    EEPROM.update(BootProfileEepromAddress, (uint8_t)index);
+    rebootIntoMode(mode, true);  // replies OK, does not return
+  }
+  if (useProfile(index)) Serial.println(F("OK"));
+  else Serial.println(F("ERR"));
+}
+
+// DDAT/LDAT: count codes from offset in the extras block (layer: the on flag first)
+static void printExtras(int index, boolean layer) {
+  if (index < 0 || index > MaxProfiles) {
+    Serial.println(F("ERR"));
+    return;
+  }
+  int address = extrasAddress(index);
+  Serial.print(layer ? F("LDAT ") : F("DDAT "));
+  Serial.print(index);
+  if (layer) {
+    Serial.print(EEPROM.read(address + NumKeys + NumFingerKeys) == 1 ? F(" 1") : F(" 0"));
+    address += NumKeys;
+  }
+  for (int key = 0; key < (layer ? NumFingerKeys : NumKeys); key++) {
+    Serial.print(' ');
+    Serial.print(readCode(address + key));
+  }
+  Serial.println();
+}
+
+static void handleExtrasSet(char* arguments, boolean layer) {
+  char* token = strtok(arguments, " ");
+  int index = token ? atoi(token) : -1;
+  int count = layer ? NumFingerKeys + 1 : NumKeys;  // layer: on flag + codes
+  uint8_t values[NumFingerKeys + 1];
+  for (int field = 0; field < count; field++) {
+    token = strtok(NULL, " ");
+    long value = token ? atol(token) : -1;
+    if (index < 0 || index > MaxProfiles || value < 0 || value > 254 || (layer && field == 0 && value > 1)) {
+      Serial.println(F("ERR"));
+      return;
+    }
+    values[field] = (uint8_t)value;
+  }
+  int address = extrasAddress(index);
+  if (layer) {
+    for (int key = 0; key < NumFingerKeys; key++) EEPROM.update(address + NumKeys + key, values[key + 1]);
+    EEPROM.update(address + NumKeys + NumFingerKeys, values[0]);
+  } else {
+    for (int key = 0; key < NumKeys; key++) EEPROM.update(address + key, values[key]);
+  }
+  if (index == activeProfile) {
+    releaseAllSlots();
+    loadDoubles(index);
+  }
+  Serial.println(F("OK"));
+}
+
+static void printCodes(const uint8_t* keys, uint8_t threshold) {
+  for (int slot = 0; slot < NumSlots; slot++) {
+    if (slot > 0) Serial.print(' ');
+    Serial.print(keys[slot]);
+  }
+  Serial.print(' ');
+  Serial.print(threshold);
+}
+
+//   PLIST                        -> PROF <i>|<name>|<exe> per used profile, then PEND
+//   PGET <i>                     -> PDAT <i>|<name>|<exe>|<18 codes> <threshold> <mode>   | ERR
+//   PSET <i>|<name>|<exe>|<18 codes> <threshold> [mode]   -> OK | ERR  (saved; name 1..15, exe 0..47 chars, no '|')
+//                                   mode 0 keyboard, 1 gamepad, 2 mouse, 3 = keep (default)
+//   DGET <i>                     -> DDAT <i> <13 double-tap codes, 0 = none>   (i 0 = standard map)
+//   DSET <i> <13 codes>          -> OK | ERR
+//   LGET <i>                     -> LDAT <i> <0|1 thumb layer on> <12 layer codes, 0 = normal key>
+//   LSET <i> <0|1> <12 codes>    -> OK | ERR
+//   GEST                         -> GEST <up> <down> <left> <right>   (plug-in gestures: 0..2 mode, 3 = keep)
+//   GEST <u> <d> <l> <r>         -> OK
+//   SMODE                        -> SMODE <mode of the standard map, 3 = keep>
+//   SMODE <0..3>                 -> OK
+//   PDEL <i>                     -> OK | ERR
+//   PUSE                         -> PUSE <active profile, 0 = standard>
+//   PUSE <i>                     -> OK | ERR   (RAM only; a profile with another mode reboots the board into it)
+static void printProfileList() {
+  Profile profile;
+  for (int index = 1; index <= MaxProfiles; index++) {
+    if (!readProfile(index, profile)) continue;
+    Serial.print(F("PROF "));
+    Serial.print(index);
+    Serial.print('|');
+    Serial.print(profile.name);
+    Serial.print('|');
+    Serial.println(profile.exe);
+  }
+  Serial.println(F("PEND"));
+}
+
+static void printProfile(int index) {
+  Profile profile;
+  if (!readProfile(index, profile)) {
+    Serial.println(F("ERR"));
+    return;
+  }
+  Serial.print(F("PDAT "));
+  Serial.print(index);
+  Serial.print('|');
+  Serial.print(profile.name);
+  Serial.print('|');
+  Serial.print(profile.exe);
+  Serial.print('|');
+  printCodes(profile.keys, profile.thresholdPercent);
+  Serial.print(' ');
+  Serial.println(profile.mode <= ModeMouse ? profile.mode : ModeKeep);
+}
+
+// Copies one '|'-terminated field; returns the start of the next field or NULL.
+static char* takeField(char* text, char* out, int outSize) {
+  char* bar = strchr(text, '|');
+  if (bar == NULL) return NULL;
+  int length = bar - text;
+  if (length >= outSize) return NULL;
+  memcpy(out, text, length);
+  out[length] = 0;
+  return bar + 1;
+}
+
+static void handleProfileSet(char* arguments) {
+  int index = atoi(arguments);
+  char* rest = strchr(arguments, '|');
+  if (index < 1 || index > MaxProfiles || rest == NULL) {
+    Serial.println(F("ERR"));
+    return;
+  }
+  Profile profile;
+  memset(&profile, 0, sizeof(profile));
+  profile.magic = ProfileMagic;
+  rest = takeField(rest + 1, profile.name, ProfileNameLength);
+  if (rest == NULL || profile.name[0] == 0) {
+    Serial.println(F("ERR"));
+    return;
+  }
+  rest = takeField(rest, profile.exe, ProfileExeLength);
+  if (rest == NULL) {
+    Serial.println(F("ERR"));
+    return;
+  }
+  for (int field = 0; field <= NumSlots; field++) {
+    char* token = strtok(field == 0 ? rest : NULL, " ");
+    if (token == NULL) {
+      Serial.println(F("ERR"));
+      return;
+    }
+    long value = atol(token);
+    if (value < 0 || value > 255) {
+      Serial.println(F("ERR"));
+      return;
+    }
+    if (field < NumSlots) profile.keys[field] = (uint8_t)value;
+    else profile.thresholdPercent = (uint8_t)value;
+  }
+  char* modeToken = strtok(NULL, " ");
+  profile.mode = modeToken ? (uint8_t)atoi(modeToken) : ModeKeep;
+  if (profile.mode > ModeKeep) profile.mode = ModeKeep;
+  if (!isValidKeyMap(keyMapOf(profile))) {
+    Serial.println(F("ERR"));
+    return;
+  }
+  EEPROM.put(profileAddress(index), profile);
+  if (activeProfile == index) useProfile(index);  // edited the active one: apply right away
+  Serial.println(F("OK"));
 }
 
 static void handleSetCommand(char* arguments) {
@@ -737,6 +1110,58 @@ static void handlePinsCommand(char* arguments) {
 static void handleCommand(char* line) {
   if (strcmp(line, "GET") == 0) {
     printKeyMap();
+  } else if (strcmp(line, "PLIST") == 0) {
+    printProfileList();
+  } else if (strncmp(line, "PGET ", 5) == 0) {
+    printProfile(atoi(line + 5));
+  } else if (strncmp(line, "PSET ", 5) == 0) {
+    handleProfileSet(line + 5);
+  } else if (strncmp(line, "PDEL ", 5) == 0) {
+    int index = atoi(line + 5);
+    if (index < 1 || index > MaxProfiles) {
+      Serial.println(F("ERR"));
+    } else {
+      EEPROM.update(profileAddress(index), 0);
+      for (int offset = 0; offset < ExtrasSize; offset++) EEPROM.update(extrasAddress(index) + offset, 0);
+      if (activeProfile == index) useProfile(0);
+      Serial.println(F("OK"));
+    }
+  } else if (strcmp(line, "PUSE") == 0) {
+    Serial.print(F("PUSE "));
+    Serial.println(activeProfile);
+  } else if (strncmp(line, "PUSE ", 5) == 0) {
+    switchProfile(atoi(line + 5));
+  } else if (strncmp(line, "DGET ", 5) == 0 || strncmp(line, "LGET ", 5) == 0) {
+    printExtras(atoi(line + 5), line[0] == 'L');
+  } else if (strncmp(line, "DSET ", 5) == 0 || strncmp(line, "LSET ", 5) == 0) {
+    handleExtrasSet(line + 5, line[0] == 'L');
+  } else if (strcmp(line, "GEST") == 0) {
+    Serial.print(F("GEST"));
+    for (int direction = 0; direction < 4; direction++) {
+      Serial.print(' ');
+      Serial.print(gestureMode(direction));
+    }
+    Serial.println();
+  } else if (strncmp(line, "GEST ", 5) == 0) {
+    uint8_t modes[4];
+    char* token = strtok(line + 5, " ");
+    for (int direction = 0; direction < 4; direction++) {
+      if (token == NULL || atoi(token) < 0 || atoi(token) > ModeKeep) {
+        Serial.println(F("ERR"));
+        return;
+      }
+      modes[direction] = (uint8_t)atoi(token);
+      token = strtok(NULL, " ");
+    }
+    for (int direction = 0; direction < 4; direction++) EEPROM.update(GestureEepromAddress + direction, modes[direction]);
+    Serial.println(F("OK"));
+  } else if (strcmp(line, "SMODE") == 0) {
+    Serial.print(F("SMODE "));
+    Serial.println(profileMode(0));
+  } else if (strncmp(line, "SMODE ", 6) == 0) {
+    uint8_t mode = (uint8_t)atoi(line + 6);
+    EEPROM.update(StandardModeEepromAddress, mode <= ModeMouse ? mode : ModeKeep);
+    Serial.println(F("OK"));
   } else if (strncmp(line, "SET ", 4) == 0) {
     handleSetCommand(line + 4);
   } else if (strcmp(line, "PINS") == 0) {
@@ -831,7 +1256,7 @@ static void handleCommand(char* line) {
 }
 
 static void pollSerial() {
-  static char line[96];  // SET with 18 codes is up to ~80 characters
+  static char line[192];  // PSET with name, exe and 18 codes is up to ~170 characters
   static int length = 0;
 
   while (Serial.available() > 0) {
